@@ -9,11 +9,19 @@ include_directories(Epi)
 
 
 add_executable(testarooni
-        BitSprayer/bitspray.cpp
-        BitSprayer/bitspray.h
         Epi/main.cpp
         Epi/setu.cpp
         Epi/setu.h
         Epi/stat.cpp
         Epi/filesystem.hpp
         Epi/stat.h )
+
+add_executable(biterooni
+        Epi/main.cpp
+        Epi/setu.cpp
+        Epi/setu.h
+        Epi/stat.cpp
+        Epi/filesystem.hpp
+        Epi/stat.h
+        BitSprayer/Bitsprayer.cpp
+        BitSprayer/Bitsprayer.h )

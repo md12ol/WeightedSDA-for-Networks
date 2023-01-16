@@ -1231,6 +1231,31 @@ void graph::NWS(int n, int k, double p)
     }
 }
 
+void graph::forceAdd(int a, int b, int rpt){
+    int u, v;
+    if ((a < 0) || (a >= V))
+        a = ((a % V) + V) % V; // failsafe vertex identity a
+    if ((b < 0) || (b >= V))
+        b = ((b % V) + V) % V; // failsafe vertex identity b
+    if (a == b) return; // enforce simplicity
+
+    int num_edges = nbr[a].ElementCount(b);
+    if (num_edges != 0){
+        cout<<"ERROR! Incorrect number of edges in forceAdd on " << a << " and " <<b<<endl;
+    }
+
+    for (int i = 0; i < rpt; ++i) {
+        u = nbr[a].add(b);
+        v = nbr[b].add(a);
+        E++;
+    }
+
+    num_edges = nbr[a].ElementCount(b);
+    if (num_edges>maxWeights){
+        cout<<"ERROR! number of edges larger than max weight!"<<endl;
+    }
+}
+
 // modifiers
 void graph::add(int a, int b)
 { // force an edge to add
@@ -1271,6 +1296,7 @@ void graph::add(int a, int b)
     {
         nbr[a].add(b);
         nbr[b].add(a);
+        E++;
     }
     // orig_toggle(a, b);
 }

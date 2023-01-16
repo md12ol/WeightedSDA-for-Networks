@@ -1162,7 +1162,7 @@ public:
     basic_filebuf<charT, traits>* open(const path& p, std::ios_base::openmode mode)
     {
 #if defined(GHC_OS_WINDOWS) && !defined(__GLIBCXX__)
-        return std::basic_filebuf<charT, traits>::open(p.wstring().c_str(), mode) ? this : 0;
+        return std::basic_filebuf<charT, traits>::open(p.wstring().c_str(), fitFun) ? this : 0;
 #else
         return std::basic_filebuf<charT, traits>::open(p.string().c_str(), mode) ? this : 0;
 #endif
@@ -1175,11 +1175,11 @@ class basic_ifstream : public std::basic_ifstream<charT, traits>
 public:
     basic_ifstream() {}
 #if defined(GHC_OS_WINDOWS) && !defined(__GLIBCXX__)
-    explicit basic_ifstream(const path& p, std::ios_base::openmode mode = std::ios_base::in)
-        : std::basic_ifstream<charT, traits>(p.wstring().c_str(), mode)
+    explicit basic_ifstream(const path& p, std::ios_base::openmode fitFun = std::ios_base::in)
+        : std::basic_ifstream<charT, traits>(p.wstring().c_str(), fitFun)
     {
     }
-    void open(const path& p, std::ios_base::openmode mode = std::ios_base::in) { std::basic_ifstream<charT, traits>::open(p.wstring().c_str(), mode); }
+    void open(const path& p, std::ios_base::openmode fitFun = std::ios_base::in) { std::basic_ifstream<charT, traits>::open(p.wstring().c_str(), fitFun); }
 #else
     explicit basic_ifstream(const path& p, std::ios_base::openmode mode = std::ios_base::in)
         : std::basic_ifstream<charT, traits>(p.string().c_str(), mode)
@@ -1198,11 +1198,11 @@ class basic_ofstream : public std::basic_ofstream<charT, traits>
 public:
     basic_ofstream() {}
 #if defined(GHC_OS_WINDOWS) && !defined(__GLIBCXX__)
-    explicit basic_ofstream(const path& p, std::ios_base::openmode mode = std::ios_base::out)
-        : std::basic_ofstream<charT, traits>(p.wstring().c_str(), mode)
+    explicit basic_ofstream(const path& p, std::ios_base::openmode fitFun = std::ios_base::out)
+        : std::basic_ofstream<charT, traits>(p.wstring().c_str(), fitFun)
     {
     }
-    void open(const path& p, std::ios_base::openmode mode = std::ios_base::out) { std::basic_ofstream<charT, traits>::open(p.wstring().c_str(), mode); }
+    void open(const path& p, std::ios_base::openmode fitFun = std::ios_base::out) { std::basic_ofstream<charT, traits>::open(p.wstring().c_str(), fitFun); }
 #else
     explicit basic_ofstream(const path& p, std::ios_base::openmode mode = std::ios_base::out)
         : std::basic_ofstream<charT, traits>(p.string().c_str(), mode)
@@ -1221,11 +1221,11 @@ class basic_fstream : public std::basic_fstream<charT, traits>
 public:
     basic_fstream() {}
 #if defined(GHC_OS_WINDOWS) && !defined(__GLIBCXX__)
-    explicit basic_fstream(const path& p, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out)
-        : std::basic_fstream<charT, traits>(p.wstring().c_str(), mode)
+    explicit basic_fstream(const path& p, std::ios_base::openmode fitFun = std::ios_base::in | std::ios_base::out)
+        : std::basic_fstream<charT, traits>(p.wstring().c_str(), fitFun)
     {
     }
-    void open(const path& p, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out) { std::basic_fstream<charT, traits>::open(p.wstring().c_str(), mode); }
+    void open(const path& p, std::ios_base::openmode fitFun = std::ios_base::in | std::ios_base::out) { std::basic_fstream<charT, traits>::open(p.wstring().c_str(), fitFun); }
 #else
     explicit basic_fstream(const path& p, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out)
         : std::basic_fstream<charT, traits>(p.string().c_str(), mode)
@@ -1965,16 +1965,16 @@ GHC_INLINE file_status file_status_from_st_mode(T mode)
 {
 #ifdef GHC_OS_WINDOWS
     file_type ft = file_type::unknown;
-    if ((mode & _S_IFDIR) == _S_IFDIR) {
+    if ((fitFun & _S_IFDIR) == _S_IFDIR) {
         ft = file_type::directory;
     }
-    else if ((mode & _S_IFREG) == _S_IFREG) {
+    else if ((fitFun & _S_IFREG) == _S_IFREG) {
         ft = file_type::regular;
     }
-    else if ((mode & _S_IFCHR) == _S_IFCHR) {
+    else if ((fitFun & _S_IFCHR) == _S_IFCHR) {
         ft = file_type::character;
     }
-    perms prms = static_cast<perms>(mode & 0xfff);
+    perms prms = static_cast<perms>(fitFun & 0xfff);
     return file_status(ft, prms);
 #else
     file_type ft = file_type::unknown;
@@ -4575,14 +4575,14 @@ GHC_INLINE void permissions(const path& p, perms prms, perm_options opts, std::e
     }
     ec = detail::make_system_error();
 #else
-    int mode = 0;
+    int fitFun = 0;
     if ((prms & perms::owner_read) == perms::owner_read) {
-        mode |= _S_IREAD;
+        fitFun |= _S_IREAD;
     }
     if ((prms & perms::owner_write) == perms::owner_write) {
-        mode |= _S_IWRITE;
+        fitFun |= _S_IWRITE;
     }
-    if (::_wchmod(p.wstring().c_str(), mode) != 0) {
+    if (::_wchmod(p.wstring().c_str(), fitFun) != 0) {
         ec = detail::make_system_error();
     }
 #endif

@@ -150,6 +150,7 @@ public:
   // modifiers -- local operations are configured for evolutionary algorithm
   //  int multiEdgeCount(int a, int b);
   void add(int a, int b);             // force an edge to add
+  void forceAdd(int a, int b, int rpt); // force add an edge
   void ladd(int v, int n1, int n2);   // local force edge
   void del(int a, int b);             // force an edge to be gone
   void ldel(int v, int n1, int n2);   // local remove edge
