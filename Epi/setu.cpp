@@ -21,8 +21,7 @@ bool del_many;
 std::vector<int> mem;
 
 // fitness proportional selector used in simulations
-int rselect(double *v, double ttl, int N)
-{
+int rselect(double *v, double ttl, int N) {
 
     double dart; // selection variable
     int i;       // loop index
@@ -36,24 +35,20 @@ int rselect(double *v, double ttl, int N)
     return (i);    // say where the dart landed
 }
 
-set::set()
-{ // default constructor
+set::set() { // default constructor
 
     max = n = 0; // max==0 is the clue that the structure is unallocated
     std::vector<int> mem;
 }
 
-set::set(int *m, int z)
-{ // construct with a list of elements
+set::set(int *m, int z) { // construct with a list of elements
 
     create(m, z);
 }
 
-set::set(const set &other)
-{ // copy constructor
+set::set(const set &other) { // copy constructor
 
-    if (max == 0)
-    {
+    if (max == 0) {
         max = n = 0;
         mem.clear();
         return;
@@ -66,22 +61,19 @@ set::set(const set &other)
         mem.push_back(other.mem.at(i));
 }
 
-set::~set()
-{ // destructor
+set::~set() { // destructor
 
     destroy();
 }
 
 // utilities
-void set::create(int *m, int z)
-{ // create a set with a given membership and size
+void set::create(int *m, int z) { // create a set with a given membership and size
 
     for (int i = 0; i < z; i++)
         add(m[i]); // put the elements in
 }
 
-void set::destroy()
-{ // destroy a set
+void set::destroy() { // destroy a set
 
     if (max == 0)
         return; // don't try to destroy empty structures
@@ -90,15 +82,13 @@ void set::destroy()
     max = n = 0;
 }
 
-void set::setempty()
-{ // mark as empty for mass allocation
+void set::setempty() { // mark as empty for mass allocation
 
     max = n = 0;
     mem.clear();
 }
 
-void set::copy(set &other)
-{ // copy another set
+void set::copy(set &other) { // copy another set
 
     destroy();
     if (other.max == 0)
@@ -110,8 +100,7 @@ void set::copy(set &other)
         mem.push_back(other.mem.at(i));
 }
 
-void set::copyO(set &other, int q)
-{ // copy another set
+void set::copyO(set &other, int q) { // copy another set
 
     destroy();
     if (other.max == 0)
@@ -123,56 +112,44 @@ void set::copyO(set &other, int q)
         mem[i] = other.mem[i] + q;
 }
 
-void set::enlarge()
-{                   // increment max
+void set::enlarge() {                   // increment max
     max += SETINCR; // record new size
     mem.reserve(max);
 }
 
-int set::add(int z)
-{ // add a member, returns true if a not ALREADY
+int set::add(int z) { // add a member, returns true if a not ALREADY
 
     int i, j;
 
     // cout << "ADD " << z << endl;
     // write(cout);
 
-    if (max == 0)
-    { // empty set, create everything
+    if (max == 0) { // empty set, create everything
         max = SETINCR;
         n = 1;
         mem.reserve(max);
         mem.push_back(z);
         return (1);
-    }
-    else if (n == 0)
-    {
+    } else if (n == 0) {
         mem.push_back(z);
         n = 1;
         return (1);
         // bit of a messy check to cap number elements in multiset
-    }
-    else
-    { // existing set, see if the element is new
+    } else { // existing set, see if the element is new
         int freq = ElementCount(z);
-        for (i = 0; i < mem.size(); i++)
-        {
-            if (weightedEdges == false || freq == maxWeights)
-            {
+        for (i = 0; i < mem.size(); i++) {
+            if (weightedEdges == false || freq == maxWeights) {
                 if (mem[i] == z)
                     return (0);
             }
         }
         if (n == max)
             enlarge(); // create more space if it is needed
-        if (mem[n - 1] < z)
-        {
+        if (mem[n - 1] < z) {
             // cout << "add end" << endl;
             mem.push_back(z);
             n++; // was missing prior, possible compromised data?
-        }
-        else
-        { // ripple insert
+        } else { // ripple insert
             i = 0;
             while (z > mem.at(i))
                 i++;
@@ -183,16 +160,14 @@ int set::add(int z)
     return (1);
 }
 
-int set::remo(const int z)
-{ // remove a member, returns true if in there
+int set::remo(const int z) { // remove a member, returns true if in there
 
     int i, j;
 
     // cout << "REMO " << z << endl;
 
     for (i = 0; i < n; i++)
-        if (mem[i] == z)
-        { // found it
+        if (mem[i] == z) { // found it
             mem.erase(mem.begin() + i);
             n--;        // reduce set size
             return (1); // report succesful deletion
@@ -201,40 +176,34 @@ int set::remo(const int z)
     return (0); // report vertex not found
 }
 
-void set::clear()
-{ // clear the set of members
+void set::clear() { // clear the set of members
     mem.clear();
     n = 0; // max the set empty
 }
 
 // information
 
-int set::size()
-{ // what is the size of the set
+int set::size() { // what is the size of the set
 
     return (n);
 }
 
 // element count method for multiset
-int set::ElementCount(int z)
-{
+int set::ElementCount(int z) {
     int i;
     int rslt = 0;
-    for (i = 0; i < mem.size(); i++)
-    {
+    for (i = 0; i < mem.size(); i++) {
         if (mem.at(i) == z)
             rslt++;
     }
     return rslt;
 }
 
-int set::memb(int z)
-{ // is z a member? 0=no 1=yes
+int set::memb(int z) { // is z a member? 0=no 1=yes
 
     int i;
 
-    for (i = 0; i < n; i++)
-    {
+    for (i = 0; i < n; i++) {
         if (mem.at(i) == z)
             return (1);
         if (mem.at(i) > z)
@@ -243,8 +212,7 @@ int set::memb(int z)
     return (0);
 }
 
-int set::memz(int z)
-{ // zth member
+int set::memz(int z) { // zth member
 
     if ((z < 0) || (z >= n))
         return (0); // crock failsafe
@@ -253,8 +221,7 @@ int set::memz(int z)
 }
 
 // operations
-void set::unyun(set &A, set &B)
-{ // union
+void set::unyun(set &A, set &B) { // union
 
     int i;
 
@@ -263,33 +230,28 @@ void set::unyun(set &A, set &B)
         add(B.mem[i]);
 }
 
-void set::inter(set &A, set &B)
-{ // intersection
+void set::inter(set &A, set &B) { // intersection
 
     int a, b;
 
     n = 0; // erase current content
     a = 0;
     b = 0;
-    do
-    {
+    do {
         if ((a >= A.n) || (b >= B.n))
             return; // done
-        if (A.mem[a] == B.mem[b])
-        {
+        if (A.mem[a] == B.mem[b]) {
             add(A.mem[a]);
             a++;
             b++;
-        }
-        else if (A.mem[a] < B.mem[b])
+        } else if (A.mem[a] < B.mem[b])
             a++;
         else
             b++;
     } while (1);
 }
 
-void set::setdf(set &A, set &B)
-{ // set difference
+void set::setdf(set &A, set &B) { // set difference
 
     int i;
 
@@ -298,8 +260,7 @@ void set::setdf(set &A, set &B)
         remo(B.mem[i]);
 }
 
-void set::symdf(set &A, set &B)
-{ // symmetric difference
+void set::symdf(set &A, set &B) { // symmetric difference
 
     int i;
 
@@ -311,8 +272,7 @@ void set::symdf(set &A, set &B)
             add(B.mem[i]);
 }
 
-double set::sumAt(double *ft)
-{ // sum indecies of ft in the set
+double set::sumAt(double *ft) { // sum indecies of ft in the set
 
     double ttl; // summing register
     int i;      // loop index
@@ -325,8 +285,7 @@ double set::sumAt(double *ft)
 
 // ft should be strictly positive - it places a probability measure on the
 // members of the set.
-int set::FPS(double *ft)
-{ // fitness proportional selection
+int set::FPS(double *ft) { // fitness proportional selection
 
     double ttl, dart; // dart and dartboard
     int i;            // index
@@ -335,26 +294,22 @@ int set::FPS(double *ft)
         return (0); // dumbass filter
 
     ttl = sumAt(ft); // get the size of the dartboard
-    if (ttl > 0.01)
-    {
+    if (ttl > 0.01) {
         dart = drand48() * ttl; // throw the dart
         i = 0;
         dart -= ft[mem[0]]; // hit first?
-        while ((dart > 0) && (i < n))
-        { // iterated:
+        while ((dart > 0) && (i < n)) { // iterated:
             i++;
             dart -= ft[mem[i]]; // hit next?
         }
         if (i == n)
             i = n - 1;   // failsafe
         return (mem[i]); // return result
-    }
-    else
+    } else
         return (mem[lrand48() % n]); // zero total?  select at radnom
 }
 
-int graph::RNB(int v)
-{ // Random neighbor
+int graph::RNB(int v) { // Random neighbor
 
     if ((v < 0) || (v >= V))
         return (-1); // return "nope"
@@ -364,19 +319,16 @@ int graph::RNB(int v)
 }
 
 // input-output
-void set::write(ostream &aus)
-{ // write set
+void set::write(ostream &aus) { // write set
 
     aus << n << " " << max << endl;
     for (int i = 0; i < n; i++)
         cout << mem[i] << endl;
 }
 
-void set::writememb(ostream &aus)
-{ // write members on one line
+void set::writememb(ostream &aus) { // write members on one line
 
-    if (n == 0)
-    {
+    if (n == 0) {
         aus << endl;
         return; // nothing to write
     }
@@ -387,11 +339,9 @@ void set::writememb(ostream &aus)
     aus << endl;
 }
 
-void set::writememb(ostream &aus, char sep)
-{ // write members on one line
+void set::writememb(ostream &aus, char sep) { // write members on one line
 
-    if (n == 0)
-    {
+    if (n == 0) {
         aus << endl;
         return; // nothing to write
     }
@@ -402,8 +352,7 @@ void set::writememb(ostream &aus, char sep)
     aus << endl;
 }
 
-void set::read(istream &inp)
-{ // read set
+void set::read(istream &inp) { // read set
 
     char buf[60];
     int k;
@@ -418,16 +367,14 @@ void set::read(istream &inp)
         k++;
     max = atoi(buf + k);
     mem.reserve(max);
-    for (k = 0; k < n; k++)
-    {
+    for (k = 0; k < n; k++) {
         inp.getline(buf, 59);
         mem.insert(mem.begin() + k, atoi(buf));
         //        mem[k] = atoi(buf);
     }
 }
 
-void set::readmemb(istream &inp)
-{ // read members on one line
+void set::readmemb(istream &inp) { // read members on one line
 
     char buf[10000];
 
@@ -436,8 +383,7 @@ void set::readmemb(istream &inp)
     destroy();
     inp.getline(buf, 999);
     l = strlen(buf);
-    if (l > 0)
-    {
+    if (l > 0) {
         n = 0;
         for (k = 0; k < l; k++)
             if (buf[k] == ' ')
@@ -448,8 +394,7 @@ void set::readmemb(istream &inp)
         mem.insert(mem.begin(), atoi(buf));
         k = 0;
         l = 1;
-        while (l < n)
-        {
+        while (l < n) {
             while (buf[k] != ' ')
                 k++;
             while (buf[k] == ' ')
@@ -461,15 +406,13 @@ void set::readmemb(istream &inp)
 
 /******************************Graph CODE*******************************/
 
-graph::graph()
-{ // initialize an empty structure
+graph::graph() { // initialize an empty structure
 
     M = V = E = 0;    // M==0 isthe empty structure clue
     nbr = 0;          // nil nieghbor list
     clr = 0;          // nil color buffer
     nqual = nwgt = 0; // record that no weights or qualities exist yet
-    for (int i = 0; i < MAXQ; i++)
-    {
+    for (int i = 0; i < MAXQ; i++) {
         quality[i] = 0;
         weights[i] = 0;
     } // zero out weights,quals
@@ -478,22 +421,19 @@ graph::graph()
     del_many = true;
 }
 
-graph::graph(int max)
-{ // initialize to maximum of M vertices
+graph::graph(int max) { // initialize to maximum of M vertices
 
     M = 0;       // prevent pre-natal calls to destroy
     create(max); // call the creation method
 }
 
-graph::~graph()
-{ // delete s structure
+graph::~graph() { // delete s structure
 
     destroy(); // deallocate everything
 }
 
 // utilities
-void graph::create(int max)
-{ // create with max maximum vertices
+void graph::create(int max) { // create with max maximum vertices
 
     // cout << "Create " << max << endl;
 
@@ -505,34 +445,29 @@ void graph::create(int max)
     nbr = new set[M]; // create set variables
     clr = 0;          // no colors
     nqual = nwgt = 0; // record that no weights or qualities exist yet
-    for (int i = 0; i < MAXQ; i++)
-    {
+    for (int i = 0; i < MAXQ; i++) {
         quality[i] = 0;
         weights[i] = 0;
     } // zero out weights,quals
 }
 
-void graph::destroy()
-{ // deallocate everything
+void graph::destroy() { // deallocate everything
 
     int i; // loop index
 
-    if (M > 0)
-    {
+    if (M > 0) {
         delete[] nbr;
         if (clr != 0)
             delete[] clr;
     }
 
     // clear everything as well
-    for (i = 0; i < nqual; i++)
-    {
+    for (i = 0; i < nqual; i++) {
         delete[] quality[i];
         quality[i] - 0;
     }          // clear quals
     nqual = 0; // record no quals
-    for (i = 0; i < nwgt; i++)
-    {
+    for (i = 0; i < nwgt; i++) {
         delete[] weights[i];
         weights[i] - 0;
     }         // clear weights
@@ -542,8 +477,7 @@ void graph::destroy()
     clr = 0;
 }
 
-void graph::Enlarge(int newmax)
-{ // increase maximum vertices to newmax
+void graph::Enlarge(int newmax) { // increase maximum vertices to newmax
 
     set *nw, sw; // new set list for new neighbors
     int *nc;     // expanded color list
@@ -556,8 +490,7 @@ void graph::Enlarge(int newmax)
         nc = new int[newmax]; // create new color list if needed
     for (i = 0; i < newmax; i++)
         nw[i].setempty(); // mark as empty
-    for (i = 0; i < V; i++)
-    {
+    for (i = 0; i < V; i++) {
         nw[i].copy(nbr[i]); // copy current neighbors
         if (clr != 0)
             nc[i] = clr[i];
@@ -565,8 +498,7 @@ void graph::Enlarge(int newmax)
     for (i = 0; i < M; i++)
         nbr[i].destroy(); // deallocate nightbors
     delete[] nbr;         // deallocate neighbor list
-    if (clr != 0)
-    {                 // if color needs updating
+    if (clr != 0) {                 // if color needs updating
         delete[] clr; // delete the old color
         clr = nc;     // update
     }
@@ -574,15 +506,13 @@ void graph::Enlarge(int newmax)
     M = newmax; // update maximum
 }
 
-void graph::clearE()
-{ // change graph to empty
+void graph::clearE() { // change graph to empty
 
     empty(V);
 }
 
 // Request a quality
-int graph::RQquality(int v)
-{ // index of quality or -1 if none left
+int graph::RQquality(int v) { // index of quality or -1 if none left
 
     if (nqual == MAXQ)
         return (-1);             // Sorry -- no qualities left
@@ -593,8 +523,7 @@ int graph::RQquality(int v)
     return (nqual - 1);        // return index of quality
 }
 
-int graph::RQquality(int *Q)
-{ // as above, but initialize to Q -- size==V
+int graph::RQquality(int *Q) { // as above, but initialize to Q -- size==V
 
     if (nqual == MAXQ)
         return (-1);             // Sorry -- no qualities left
@@ -605,8 +534,7 @@ int graph::RQquality(int *Q)
     return (nqual - 1);           // return index of quality
 }
 
-void graph::RecordQ(int num, int *Q)
-{ // assign Q to the quality in question
+void graph::RecordQ(int num, int *Q) { // assign Q to the quality in question
 
     if ((num < 0) || (num >= nqual))
         return; // try to initialize a non-existant quality
@@ -614,8 +542,7 @@ void graph::RecordQ(int num, int *Q)
         quality[num][i] = Q[i]; // set to Q
 }
 
-void graph::RetrieveQ(int num, int *Q)
-{ // get the values in the quality -> Q
+void graph::RetrieveQ(int num, int *Q) { // get the values in the quality -> Q
 
     if ((num < 0) || (num >= nqual))
         return; // try to retrieve a non-existant quality
@@ -624,8 +551,7 @@ void graph::RetrieveQ(int num, int *Q)
 }
 
 // request a weight
-int graph::RQweight(double v)
-{ // index of quality or -1 if none left
+int graph::RQweight(double v) { // index of quality or -1 if none left
 
     if (nwgt == MAXQ)
         return (-1);               // Sorry -- no qualities left
@@ -636,8 +562,7 @@ int graph::RQweight(double v)
     return (nwgt - 1);        // return index of quality
 }
 
-int graph::RQweight(double *W)
-{ // as above but initialize to W -- size==V
+int graph::RQweight(double *W) { // as above but initialize to W -- size==V
 
     if (nwgt == MAXQ)
         return (-1);               // Sorry -- no qualities left
@@ -648,8 +573,7 @@ int graph::RQweight(double *W)
     return (nwgt - 1);           // return index of quality
 }
 
-void graph::RecordW(int num, double *W)
-{ // assign W to the weights in question
+void graph::RecordW(int num, double *W) { // assign W to the weights in question
 
     if ((num < 0) || (num >= nwgt))
         return; // try to retrieve a non-existant weight
@@ -657,8 +581,7 @@ void graph::RecordW(int num, double *W)
         weights[num][i] = W[i]; // set to W
 }
 
-void graph::RetrieveW(int num, double *W)
-{ // get the values in the quality -> W
+void graph::RetrieveW(int num, double *W) { // get the values in the quality -> W
 
     if ((num < 0) || (num >= nwgt))
         return; // try to retrieve a non-existant weight
@@ -667,8 +590,7 @@ void graph::RetrieveW(int num, double *W)
 }
 
 // are you infected with n contacts of strength alpha
-int graph::infected(int n, double alpha)
-{ // SIR utility routine
+int graph::infected(int n, double alpha) { // SIR utility routine
 
     double beta;
 
@@ -679,8 +601,7 @@ int graph::infected(int n, double alpha)
 }
 
 // initializers
-void graph::empty(int n)
-{ // empty graph
+void graph::empty(int n) { // empty graph
 
     int i;
 
@@ -692,8 +613,7 @@ void graph::empty(int n)
         nbr[i].clear(); // empty out the neghbor lists
 }
 
-void graph::Kn(int n)
-{ // complete
+void graph::Kn(int n) { // complete
 
     int i, j;
 
@@ -702,16 +622,14 @@ void graph::Kn(int n)
     V = n;
     E = n * (n - 1) / 2; // create values for V and E
 
-    for (i = 0; i < n; i++)
-    {
+    for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++)
             if (j != i)
                 nbr[i].add(j);
     }
 }
 
-void graph::Knm(int n, int m)
-{ // complete bipartite
+void graph::Knm(int n, int m) { // complete bipartite
 
     int i, j;
 
@@ -721,15 +639,13 @@ void graph::Knm(int n, int m)
     E = n * m; // create values for V and E
 
     for (i = 0; i < n; i++)
-        for (j = 0; j < m; j++)
-        { // loop over relevant pairs
+        for (j = 0; j < m; j++) { // loop over relevant pairs
             nbr[i].add(n + j);
             nbr[n + j].add(i);
         }
 }
 
-void graph::Cn(int n)
-{ // cycle
+void graph::Cn(int n) { // cycle
 
     int i;
     int ls[2];
@@ -738,16 +654,14 @@ void graph::Cn(int n)
         create(n); // make sure storage is available
     V = n;
     E = n; // create values for V and E
-    for (i = 0; i < n; i++)
-    {
+    for (i = 0; i < n; i++) {
         ls[0] = (i + 1) % n;
         ls[1] = (i + n - 1) % n;
         nbr[i].create(ls, 2);
     }
 }
 
-void graph::Pn(int n, int m)
-{ // Petersen n,m
+void graph::Pn(int n, int m) { // Petersen n,m
 
     int i;
 
@@ -759,8 +673,7 @@ void graph::Pn(int n, int m)
 
     V = 2 * n;
     E = 3 * n; // addign the vertex and edge values
-    for (i = 0; i < n; i++)
-    {
+    for (i = 0; i < n; i++) {
         nbr[i].add((i + 1) % n);             // outer cycle left
         nbr[i].add((i - 1 + n) % n);         // outer cycle right
         nbr[i].add(i + n);                   // spoke
@@ -770,16 +683,14 @@ void graph::Pn(int n, int m)
     }
 }
 
-void graph::Hn(int dim)
-{ // Hypercube
+void graph::Hn(int dim) { // Hypercube
 
     int i, j, b;  // index variables, size buffer
     int bits[20]; // bit array
     int nb;       // neighbor buffer
 
     b = 1; // initialize size buffer
-    for (i = 0; i < dim; i++)
-    {                // compute size and bit array
+    for (i = 0; i < dim; i++) {                // compute size and bit array
         bits[i] = b; // save bit
         b *= 2;      // compute size
     }
@@ -787,18 +698,15 @@ void graph::Hn(int dim)
         create(b);   // make sure storage is available
     V = b;           // record number of vertices
     E = b * dim / 2; // compute and record number of vertices
-    for (i = 0; i < b; i++)
-    { // loop over vertices
-        for (j = 0; j < dim; j++)
-        {                       // loop over neighbors
+    for (i = 0; i < b; i++) { // loop over vertices
+        for (j = 0; j < dim; j++) {                       // loop over neighbors
             nb = (i ^ bits[j]); // compute neighbor with bitwise xor
             nbr[i].add(nb);
         }
     }
 }
 
-void graph::RNGnm(int n, int m)
-{ // Ring with +/-m neighbors
+void graph::RNGnm(int n, int m) { // Ring with +/-m neighbors
 
     int i, j, k;
 
@@ -811,12 +719,9 @@ void graph::RNGnm(int n, int m)
     V = n;
     E = 2 * m * n; // adding the vertex and edge values
     E /= 2;
-    for (i = 0; i < n; i++)
-    {
-        for (j = 1; j <= m; j++)
-        {
-            for (k = 0; k < startingWeights; k++)
-            {
+    for (i = 0; i < n; i++) {
+        for (j = 1; j <= m; j++) {
+            for (k = 0; k < startingWeights; k++) {
                 nbr[i].add((i + j) % n);
                 nbr[i].add((i - j + n) % n);
             }
@@ -825,18 +730,15 @@ void graph::RNGnm(int n, int m)
 }
 
 /* the UTAM method ASSUMES that ed has length V(V-1)/2*/
-void graph::UTAM(int *ed)
-{ // initialize from an upper triangular adj. matrix
+void graph::UTAM(int *ed) { // initialize from an upper triangular adj. matrix
 
     int i, j, k; // loop index variables
 
     clearE();
     k = 0;
     for (i = 0; i < V - 1; i++)
-        for (j = i + 1; j < V; j++)
-        {
-            if (ed[k++] == 1)
-            {
+        for (j = i + 1; j < V; j++) {
+            if (ed[k++] == 1) {
                 nbr[i].add(j);
                 nbr[j].add(i);
                 E++;
@@ -845,8 +747,7 @@ void graph::UTAM(int *ed)
 }
 
 // wk* holds the walk, wl is the size of the array */
-void graph::WalkO(int *wk, int wl)
-{ // overlaying walk representation
+void graph::WalkO(int *wk, int wl) { // overlaying walk representation
 
     int i;
 
@@ -858,8 +759,7 @@ void graph::WalkO(int *wk, int wl)
 }
 
 /* holds the walk, wl is the size of the array */
-void graph::WalkT(int *wk, int wl)
-{ // toggling walk representation
+void graph::WalkT(int *wk, int wl) { // toggling walk representation
 
     int i;
 
@@ -869,8 +769,7 @@ void graph::WalkT(int *wk, int wl)
 }
 
 // el* holds the edges, ne is the size of the array */
-void graph::EdgeLst(int *el, int ne)
-{ // Edge list
+void graph::EdgeLst(int *el, int ne) { // Edge list
 
     int i;
 
@@ -890,33 +789,30 @@ void graph::EdgeLst(int *el, int ne)
 // command A(dd)=0 D(elete)=1 T(oggle)=2 S(wap)=3 the second specifies
 // the first argument of the command the third specifies the second.
 // L is the length of the gene
-void graph::ADTS(int **cs, int L)
-{ // implement an add delete toggle swap
+void graph::ADTS(int **cs, int L) { // implement an add delete toggle swap
 
     int c; // command index
 
     if (V < 2)
         return; // nothing to do
-    for (c = 0; c < L; c++)
-    { // loop over commands
-        switch (cs[c][0])
-        {
-        case 0: // Add
-            add(cs[c][1] % V, cs[c][2] % V);
-            // cout << "ADD" << endl;
-            break;
-        case 1: // Delete
-            del(cs[c][1] % V, cs[c][2] % V);
-            // cout << "DEL" << endl;
-            break;
-        case 2: // Toggle
-            orig_toggle(cs[c][1] % V, cs[c][2] % V);
-            // cout << "TOG" << endl;
-            break;
-        case 3: // edge swap with degree bound two
-            edgeswap(cs[c][1], cs[c][2], 2);
-            // cout << "SWP" << endl;
-            break;
+    for (c = 0; c < L; c++) { // loop over commands
+        switch (cs[c][0]) {
+            case 0: // Add
+                add(cs[c][1] % V, cs[c][2] % V);
+                // cout << "ADD" << endl;
+                break;
+            case 1: // Delete
+                del(cs[c][1] % V, cs[c][2] % V);
+                // cout << "DEL" << endl;
+                break;
+            case 2: // Toggle
+                orig_toggle(cs[c][1] % V, cs[c][2] % V);
+                // cout << "TOG" << endl;
+                break;
+            case 3: // edge swap with degree bound two
+                edgeswap(cs[c][1], cs[c][2], 2);
+                // cout << "SWP" << endl;
+                break;
         }
     }
 }
@@ -925,70 +821,62 @@ void graph::ADTS(int **cs, int L)
 // command H(op)=0 A(dd)=1 D(elete)=2 T(oggle)=3 S(wap)=4 the second specifies
 // the first argument of the command the third specifies the second.
 // L is the length of the gene
-void graph::HADTS(int **cs, int L)
-{ // implement an add delete toggle swap
+void graph::HADTS(int **cs, int L) { // implement an add delete toggle swap
 
     int c; // command index
 
     if (V < 2)
         return; // nothing to do
-    for (c = 0; c < L; c++)
-    { // loop over commands
-        switch (cs[c][0] % 5)
-        {
-        case 0: // Hop
-            hop(cs[c][1] % V,
-                cs[c][2] % V,
-                cs[c][2] / V); // assume large integer rep
-            break;
-        case 1: // Add
-            add(cs[c][1] % V, cs[c][2] % V);
-            // cout << "ADD" << endl;
-            break;
-        case 2: // Delete
-            del(cs[c][1] % V, cs[c][2] % V);
-            // cout << "DEL" << endl;
-            break;
-        case 3: // Toggle
-            orig_toggle(cs[c][1] % V, cs[c][2] % V);
-            // cout << "TOG" << endl;
-            break;
-        case 4: // edge swap with degree bound two
-            edgeswap(cs[c][1], cs[c][2], 2);
-            // cout << "SWP" << endl;
-            break;
+    for (c = 0; c < L; c++) { // loop over commands
+        switch (cs[c][0] % 5) {
+            case 0: // Hop
+                hop(cs[c][1] % V,
+                    cs[c][2] % V,
+                    cs[c][2] / V); // assume large integer rep
+                break;
+            case 1: // Add
+                add(cs[c][1] % V, cs[c][2] % V);
+                // cout << "ADD" << endl;
+                break;
+            case 2: // Delete
+                del(cs[c][1] % V, cs[c][2] % V);
+                // cout << "DEL" << endl;
+                break;
+            case 3: // Toggle
+                orig_toggle(cs[c][1] % V, cs[c][2] % V);
+                // cout << "TOG" << endl;
+                break;
+            case 4: // edge swap with degree bound two
+                edgeswap(cs[c][1], cs[c][2], 2);
+                // cout << "SWP" << endl;
+                break;
         }
     }
 }
 
-void graph::copy(graph &other)
-{ // copy another graph
+void graph::copy(graph &other) { // copy another graph
 
     int i, m; // loop index variable
 
-    if (other.V == 0)
-    { // clear the graph to "copy" and empty graph
+    if (other.V == 0) { // clear the graph to "copy" and empty graph
         clearE();
         return;
     }
 
-    if (other.V > M)
-    { // make surthe graphi s big enough
+    if (other.V > M) { // make surthe graphi s big enough
         Enlarge(other.V);
     }
 
     V = other.V;
     E = other.E;
 
-    for (i = 0; i < other.V; i++)
-    { // copy the other vertex
+    for (i = 0; i < other.V; i++) { // copy the other vertex
         nbr[i].copy(other.nbr[i]);
     }
 }
 
 // Random graph generators -- new section Nov 2 2020
-void graph::BA(int n, int m)
-{ // Barabasi-Albert graph with n vertices;
+void graph::BA(int n, int m) { // Barabasi-Albert graph with n vertices;
     // m edges added at each step
 
     int i, j;       // loop indices
@@ -1004,8 +892,7 @@ void graph::BA(int n, int m)
     E = 1; // assign the vertex and edge values
     for (i = 0; i < n; i++)
         dx[i] = i; // initialize shuffle
-    for (i = 0; i < n - 2; i++)
-    { // shuffle
+    for (i = 0; i < n - 2; i++) { // shuffle
         dart = lrand48() % (n - i) + i;
         hold = dx[dart];
         dx[dart] = dx[i];
@@ -1015,13 +902,10 @@ void graph::BA(int n, int m)
     // for(i=0;i<n;i++) cout << dx[i] << " "; cout << endl;
     p.push_back(0); // initialize prob vector
 
-    for (i = 1; i < n; i++)
-    { // add vertices one by one
+    for (i = 1; i < n; i++) { // add vertices one by one
         temp.setempty();
-        for (j = 0; j < min(m, i); j++)
-        { // add m edges to existing vertices
-            do
-            { // choose from prob vector
+        for (j = 0; j < min(m, i); j++) { // add m edges to existing vertices
+            do { // choose from prob vector
                 dart = lrand48() % p.size();
             } while (temp.memb(p[dart]));
             add(dx[i], dx[p[dart]]); // add an edge
@@ -1038,8 +922,7 @@ void graph::BA(int n, int m)
 // Power law clustering graph with n vertices; m edges added at each
 // step; p is the chance of adding an extra edge to create a triangle
 //(modification of BA graph to enhance clustering coeff of vertices)
-void graph::PCG(int n, int m, double prob)
-{
+void graph::PCG(int n, int m, double prob) {
 
     int i, j, k;
     vector<int> p;    // vertices repeated to enhance probability of being chosen
@@ -1060,8 +943,7 @@ void graph::PCG(int n, int m, double prob)
     // shuffle vertices to ensure randomness
     for (i = 0; i < n; i++)
         dx[i] = i; // initialize shuffle
-    for (i = 0; i < n - 2; i++)
-    { // shuffle
+    for (i = 0; i < n - 2; i++) { // shuffle
         dart = lrand48() % (n - i) + i;
         hold = dx[dart];
         dx[dart] = dx[i];
@@ -1074,41 +956,33 @@ void graph::PCG(int n, int m, double prob)
     // for(i=0;i<n;i++) cout << dx[i] << " "; cout << endl;
     p.push_back(0); // initialize prob vector
 
-    for (i = 1; i < n; i++)
-    {                    // add vertices one by one
+    for (i = 1; i < n; i++) {                    // add vertices one by one
         temp.setempty(); // keep track of added edges
         pp.clear();
         std::copy(p.begin(),
                   p.end(),
                   back_inserter(pp)); // copy prob vector to scratch vector
-        for (j = 0; j < min(m, i); j++)
-        { // add m edges to existing vertices
+        for (j = 0; j < min(m, i); j++) { // add m edges to existing vertices
             for (k = 0; k < pp.size(); k++)
                 if (edgeP(dx[i], dx[pp[k]]))
                     pp.erase(pp.begin() + k); // delete existing edges from pp
-            if (pp.size() > 0)
-            {                                 // if there are possible edges to add
+            if (pp.size() > 0) {                                 // if there are possible edges to add
                 dart = lrand48() % pp.size(); // choose from prob vector
                 target = pp[dart];
-                if (i > m && drand48() < prob)
-                { // make a triangle
+                if (i > m && drand48() < prob) { // make a triangle
                     // check if possible
-                    if (degree(dx[target]) > 0)
-                    {
+                    if (degree(dx[target]) > 0) {
                         neigh.setempty();
                         for (k = 0; k < degree(dx[target]); k++)
                             neigh.add(nbrmod(dx[target], k));
-                        do
-                        {
+                        do {
                             dart = lrand48() % neigh.size();
                             nn = neigh.memz(dart);
                             neigh.remo(nn);
                         } while (edgeP(nn, dx[i]) && neigh.size() > 0);
 
-                        if (!edgeP(nn, dx[i]))
-                        { // add edge that creates triangle
-                            while (nbr[nn].ElementCount(dx[i]) < startingWeights)
-                            {
+                        if (!edgeP(nn, dx[i])) { // add edge that creates triangle
+                            while (nbr[nn].ElementCount(dx[i]) < startingWeights) {
                                 add_many = false;
                                 add(nn, dx[i]);
                                 temp.add(i);      // add vertex to temp
@@ -1122,8 +996,7 @@ void graph::PCG(int n, int m, double prob)
                         }
                     }
                 }
-                while (nbr[dx[i]].ElementCount(dx[target]) < startingWeights)
-                {
+                while (nbr[dx[i]].ElementCount(dx[target]) < startingWeights) {
                     add_many = false;
                     add(dx[i], dx[target]); // add an edge to target
                     temp.add(target);       // add target to temp
@@ -1143,8 +1016,7 @@ void graph::PCG(int n, int m, double prob)
     add_many = true;
 }
 
-void graph::ER(int n, double p)
-{ // Erdo-Renyi graph with n vertices; prob p
+void graph::ER(int n, double p) { // Erdo-Renyi graph with n vertices; prob p
     // makes a connected graph -- will not work well if p*(n-1)<1
 
     int i, j; // loop index
@@ -1154,13 +1026,10 @@ void graph::ER(int n, double p)
     V = n;
     E = 0; // start with n vertices and no edges
 
-    do
-    {
+    do {
         for (i = 0; i < n - 1; i++)
-            for (j = i + 1; j < n; j++)
-            { // cycle through all possible edges
-                if (drand48() < p)
-                { // add edge with prob p
+            for (j = i + 1; j < n; j++) { // cycle through all possible edges
+                if (drand48() < p) { // add edge with prob p
                     add(i, j);
                 }
             }
@@ -1169,8 +1038,7 @@ void graph::ER(int n, double p)
 
 // This sort of random graph has n nodes connected to k nearest
 // neighbours with edges rewired with probability p
-void graph::WS(int n, int k, double p)
-{ // Watts-Strogatz graph
+void graph::WS(int n, int k, double p) { // Watts-Strogatz graph
 
     int i, j;     // loop index
     int x;        // random node
@@ -1183,16 +1051,11 @@ void graph::WS(int n, int k, double p)
     for (i = 0; i < n; i++)
         Nbrs(i, nb[i]); // save neighbours
 
-    do
-    {
-        for (i = 0; i < n; i++)
-        {
-            for (j = 0; j < deg; j++)
-            {
-                if (drand48() < p)
-                { // swap with prob p
-                    do
-                    { // choose another node
+    do {
+        for (i = 0; i < n; i++) {
+            for (j = 0; j < deg; j++) {
+                if (drand48() < p) { // swap with prob p
+                    do { // choose another node
                         x = lrand48() % n;
                     } while (x == i || edgeP(i, x));
                     add(i, x);
@@ -1205,8 +1068,7 @@ void graph::WS(int n, int k, double p)
 
 // This sort of random graph has n nodes connected to k nearest
 // neighbours with edges added with probability p
-void graph::NWS(int n, int k, double p)
-{ // Newman-Watts-Strogatz graph
+void graph::NWS(int n, int k, double p) { // Newman-Watts-Strogatz graph
 
     int i, j; // loop index
     int x;    // random node
@@ -1215,14 +1077,10 @@ void graph::NWS(int n, int k, double p)
     deg = k - k % 2; // subtract one if odd
     RNGnm(n, deg / 2);
 
-    for (i = 0; i < n; i++)
-    {
-        for (j = 0; j < deg; j++)
-        {
-            if (drand48() < p)
-            { // add edge with prob p
-                do
-                { // choose another node
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < deg; j++) {
+            if (drand48() < p) { // add edge with prob p
+                do { // choose another node
                     x = lrand48() % n;
                 } while (x == i || edgeP(i, x));
                 add(i, x);
@@ -1231,7 +1089,7 @@ void graph::NWS(int n, int k, double p)
     }
 }
 
-void graph::forceAdd(int a, int b, int rpt){
+void graph::forceAdd(int a, int b, int rpt) {
     int u, v;
     if ((a < 0) || (a >= V))
         a = ((a % V) + V) % V; // failsafe vertex identity a
@@ -1240,8 +1098,8 @@ void graph::forceAdd(int a, int b, int rpt){
     if (a == b) return; // enforce simplicity
 
     int num_edges = nbr[a].ElementCount(b);
-    if (num_edges != 0){
-        cout<<"ERROR! Incorrect number of edges in forceAdd on " << a << " and " <<b<<endl;
+    if (num_edges != 0) {
+        cout << "ERROR! Incorrect number of edges in forceAdd on " << a << " and " << b << endl;
     }
 
     for (int i = 0; i < rpt; ++i) {
@@ -1251,14 +1109,13 @@ void graph::forceAdd(int a, int b, int rpt){
     }
 
     num_edges = nbr[a].ElementCount(b);
-    if (num_edges>maxWeights){
-        cout<<"ERROR! number of edges larger than max weight!"<<endl;
+    if (num_edges > maxWeights) {
+        cout << "ERROR! number of edges larger than max weight!" << endl;
     }
 }
 
 // modifiers
-void graph::add(int a, int b)
-{ // force an edge to add
+void graph::add(int a, int b) { // force an edge to add
     int u, v;
     if ((a < 0) || (a >= V))
         a = ((a % V) + V) % V; // failsafe vertex identity a
@@ -1268,32 +1125,24 @@ void graph::add(int a, int b)
         return; // enforce simplicity
 
     int num_edges = nbr[a].ElementCount(b);
-    if (weightedEdges == true)
-    {
-        if (num_edges < maxWeights)
-        {
-            if (add_many)
-            {
-                while (num_edges < maxWeights)
-                {
+    if (weightedEdges == true) {
+        if (num_edges < maxWeights) {
+            if (add_many) {
+                while (num_edges < maxWeights) {
                     u = nbr[a].add(b);
                     v = nbr[b].add(a);
                     E++;
                     num_edges = nbr[a].ElementCount(b);
                 }
                 add_many = false;
-            }
-            else
-            {
+            } else {
                 u = nbr[a].add(b);
                 v = nbr[b].add(a);
                 E++;
                 add_many = true;
             }
         }
-    }
-    else if (nbr[a].memb(b) == 0)
-    {
+    } else if (nbr[a].memb(b) == 0) {
         nbr[a].add(b);
         nbr[b].add(a);
         E++;
@@ -1306,8 +1155,7 @@ void graph::add(int a, int b)
 //     return 1;
 // }
 
-void graph::ladd(int v, int n1, int n2)
-{ // hop an edge
+void graph::ladd(int v, int n1, int n2) { // hop an edge
 
     int nb1, nb2; // identity of new and old neighbors
     int d1, d2;   // degrees of neighbors
@@ -1342,8 +1190,7 @@ void graph::ladd(int v, int n1, int n2)
     add(v, nb2); // add the new edge
 }
 
-void graph::del(int a, int b)
-{ // force an edge to be gone
+void graph::del(int a, int b) { // force an edge to be gone
     int u, v;
     if ((a < 0) || (a >= V))
         a = ((a % V) + V) % V; // failsafe vertex identity a
@@ -1351,20 +1198,15 @@ void graph::del(int a, int b)
         b = ((b % V) + V) % V; // failsafe vertex identity b
     if (a == b)
         return; // enforce simplicity
-    if (nbr[a].memb(b) == 1)
-    {
-        if (del_many)
-        {
-            while (nbr[a].memb(b) == 1)
-            {
+    if (nbr[a].memb(b) == 1) {
+        if (del_many) {
+            while (nbr[a].memb(b) == 1) {
                 u = nbr[a].remo(b);
                 v = nbr[b].remo(a);
                 E--;
             }
             del_many = false;
-        }
-        else
-        {
+        } else {
             u = nbr[a].remo(b);
             v = nbr[b].remo(a);
             E--;
@@ -1373,8 +1215,7 @@ void graph::del(int a, int b)
     }
 }
 
-void graph::ldel(int v, int n1, int n2)
-{ // hop an edge
+void graph::ldel(int v, int n1, int n2) { // hop an edge
 
     int nb1, nb2; // identity of new and old neighbors
     int d1, d2;   // degrees of neighbors
@@ -1409,10 +1250,8 @@ void graph::ldel(int v, int n1, int n2)
     del(v, nb2); // delete the new edge
 }
 
-void graph::toggle(int a, int b, int c)
-{ // toggle an edge
-    if (!weightedEdges)
-    {
+void graph::toggle(int a, int b, int c) { // toggle an edge
+    if (!weightedEdges) {
         orig_toggle(a, b);
         return;
     }
@@ -1427,34 +1266,26 @@ void graph::toggle(int a, int b, int c)
     if (a == b)
         return; // enforce simplicity
 
-    if (nbr[a].memb(b) == 0)
-    {
+    if (nbr[a].memb(b) == 0) {
         u = nbr[a].add(b);
         v = nbr[b].add(a);
         E++;
-    }
-    else if (nbr[a].ElementCount(b) == maxWeights)
-    {
+    } else if (nbr[a].ElementCount(b) == maxWeights) {
         u = nbr[a].remo(b);
         v = nbr[b].remo(a);
         E--;
-    }
-    else if (c % 2)
-    {
+    } else if (c % 2) {
         u = nbr[a].add(b);
         v = nbr[b].add(a);
         E++;
-    }
-    else
-    {
+    } else {
         u = nbr[a].remo(b);
         v = nbr[b].remo(a);
         E--;
     }
 }
 
-void graph::orig_toggle(int a, int b)
-{ // toggle an edge
+void graph::orig_toggle(int a, int b) { // toggle an edge
 
     int u, v;
 
@@ -1466,16 +1297,13 @@ void graph::orig_toggle(int a, int b)
         b = ((b % V) + V) % V; // failsafe vertex identity b
     if (a == b)
         return; // enforce simplicity
-    if (nbr[a].memb(b) == 1)
-    { // edge exists, turn off
+    if (nbr[a].memb(b) == 1) { // edge exists, turn off
         // cout << "Toggle " << a << " " << b << " off." << endl;
         u = nbr[a].remo(b);
         v = nbr[b].remo(a);
         // if(u!=v)cout << u << " " << v << endl;
         E--;
-    }
-    else
-    { // edge does not exist, turn on
+    } else { // edge does not exist, turn on
         // cout << "Toggle " << a << " " << b << " on." << endl;
         u = nbr[a].add(b);
         v = nbr[b].add(a);
@@ -1484,8 +1312,7 @@ void graph::orig_toggle(int a, int b)
     }
 }
 
-void graph::loggle(int v, int n1, int n2)
-{ // hop an edge
+void graph::loggle(int v, int n1, int n2) { // hop an edge
 
     int nb1, nb2; // identity of new and old neighbors
     int d1, d2;   // degrees of neighbors
@@ -1519,21 +1346,16 @@ void graph::loggle(int v, int n1, int n2)
 
     int num_edges = nbr[v].ElementCount(nb2);
     int x1, x2;
-    if (num_edges <= 0 || (toggle_add == true && num_edges < maxWeights))
-    {
-        if (num_edges > 0)
-        {
+    if (num_edges <= 0 || (toggle_add == true && num_edges < maxWeights)) {
+        if (num_edges > 0) {
             toggle_add = false;
         }
         x1 = nbr[v].add(nb2);
         x2 = nbr[nb2].add(v);
 
         E++;
-    }
-    else
-    {
-        if (num_edges < maxWeights)
-        {
+    } else {
+        if (num_edges < maxWeights) {
             toggle_add = true;
         }
         x1 = nbr[v].remo(nb2);
@@ -1543,8 +1365,7 @@ void graph::loggle(int v, int n1, int n2)
     //  toggle(v, nb2); //toggle the new edge
 }
 
-void graph::simplexify(int a)
-{ // simplexify at a
+void graph::simplexify(int a) { // simplexify at a
 
     if ((a < 0) || (a >= V))
         return; // don't attempt the impossible
@@ -1576,8 +1397,7 @@ void graph::simplexify(int a)
         for (j = tt; j < tt + qq - 1; j++)
             if (i != j)
                 nbr[i].add(j);
-    for (i = 1; i < qq; i++)
-    { // move edges from neighbors of a to clique
+    for (i = 1; i < qq; i++) { // move edges from neighbors of a to clique
         nbr[i + tt - 1].add(temp[i]);
         nbr[temp[i]].remo(a);
         nbr[temp[i]].add(tt + i - 1);
@@ -1590,8 +1410,7 @@ void graph::simplexify(int a)
     /*DONE*/
 }
 
-void graph::hop(int v, int n1, int n2)
-{ // hop an edge
+void graph::hop(int v, int n1, int n2) { // hop an edge
 
     int nb1, nb2; // identity of new and old neighbors
     int d1, d2;   // degrees of neighbors
@@ -1632,8 +1451,7 @@ void graph::hop(int v, int n1, int n2)
 
 // reject swaps if either vertex is too low degee or if there are more
 // than two edges in the quartet
-void graph::edgeswap(int a, int b, int k)
-{ // decode and perform an edge swap
+void graph::edgeswap(int a, int b, int k) { // decode and perform an edge swap
     // with degree bound k
 
     if (V < 4)
@@ -1669,16 +1487,14 @@ void graph::edgeswap(int a, int b, int k)
 }
 
 // The absorb method adds a copy of a graph (other) to the current graph
-void graph::Absorb(graph &other)
-{ // add a copy of other to yourself
+void graph::Absorb(graph &other) { // add a copy of other to yourself
 
     int ofs;  // The unionizing offset
     int i, m; // loop index variable
 
     if (other.V == 0)
         return; // no graph, nothing to add
-    if (V + other.V > M)
-    { // make sure the graph is large enough
+    if (V + other.V > M) { // make sure the graph is large enough
         Enlarge(M + other.V);
         // cout << "Enlarge to " << M+other.V << endl;
     }
@@ -1691,8 +1507,7 @@ void graph::Absorb(graph &other)
 
     // write(cout);
 
-    for (i = 0; i < other.V; i++)
-    {                // copy the other vertex
+    for (i = 0; i < other.V; i++) {                // copy the other vertex
         m = i + ofs; // compute new vertex index
         // cout << "Upcopy " << m << " From " << i << endl;
         nbr[m].copyO(other.nbr[i], ofs); // shift copy the other graph
@@ -1701,8 +1516,7 @@ void graph::Absorb(graph &other)
     // write(cout);
 }
 
-void graph::Prism()
-{ // create the prism of a graph
+void graph::Prism() { // create the prism of a graph
 
     int i;
 
@@ -1710,12 +1524,10 @@ void graph::Prism()
         return; // nothing to prismate
     if (2 * V > M)
         Enlarge(2 * V); // double the size
-    for (i = 0; i < V; i++)
-    {                                // loop over current vertices
+    for (i = 0; i < V; i++) {                                // loop over current vertices
         nbr[V + i].copyO(nbr[i], V); // create second copy of graph
     }
-    for (i = 0; i < V; i++)
-    {                      // now add in the prisim spokes
+    for (i = 0; i < V; i++) {                      // now add in the prisim spokes
         nbr[i].add(i + V); // up
         nbr[i + V].add(i); // down
     }
@@ -1724,20 +1536,17 @@ void graph::Prism()
 }
 
 // information
-int graph::size()
-{ // number of vertices
+int graph::size() { // number of vertices
 
     return (V);
 }
 
-int graph::edges()
-{ // number of edges
+int graph::edges() { // number of edges
 
     return (E);
 }
 
-int graph::edgeP(int a, int b)
-{ //
+int graph::edgeP(int a, int b) { //
 
     if ((a < 0) || (b < 0) || (a >= V) || (b >= V))
         return (0); // non-vert are non-edge
@@ -1747,16 +1556,14 @@ int graph::edgeP(int a, int b)
         return (0); // check for exdge
 }
 
-void graph::dfrom(int z, int *ds)
-{ // distances from z
+void graph::dfrom(int z, int *ds) { // distances from z
 
     int i, j;   // loop index variables
     int fl;     // flag
     int cd;     // current distance
     int qq, vv; // scratch variables
 
-    if ((z < 0) || (z >= V))
-    { // safety first
+    if ((z < 0) || (z >= V)) { // safety first
         cout << "Distance from invalid vertex requested!";
         return;
     }
@@ -1764,18 +1571,14 @@ void graph::dfrom(int z, int *ds)
         ds[i] = -1; // negative one is the surrogate for infinity
     ds[z] = 0;
     cd = 0;
-    do
-    {
+    do {
         fl = 0;
         for (i = 0; i < V; i++)
-            if (ds[i] == cd)
-            {                       // if we are at current distance
+            if (ds[i] == cd) {                       // if we are at current distance
                 qq = nbr[i].size(); // get the size to prevent repeated function calls
-                for (j = 0; j < qq; j++)
-                {                        // loop over neighbors
+                for (j = 0; j < qq; j++) {                        // loop over neighbors
                     vv = nbr[i].memz(j); // get the neighbor
-                    if (ds[vv] == -1)
-                    {                    // if we have not been here yet...
+                    if (ds[vv] == -1) {                    // if we have not been here yet...
                         ds[vv] = cd + 1; // assign the distance
                         fl = 1;          // and set the flag
                     }
@@ -1785,16 +1588,14 @@ void graph::dfrom(int z, int *ds)
     } while (fl == 1); // until done
 }
 
-void graph::dfrom0(int z, int *ds)
-{ // distances from z in color zero
+void graph::dfrom0(int z, int *ds) { // distances from z in color zero
 
     int i, j;   // loop index variables
     int fl;     // flag
     int cd;     // current distance
     int qq, vv; // scratch variables
 
-    if ((z < 0) || (z >= V))
-    { // safety first
+    if ((z < 0) || (z >= V)) { // safety first
         cout << "Distance from invalid vertex requested!";
         return;
     }
@@ -1803,20 +1604,15 @@ void graph::dfrom0(int z, int *ds)
         ds[i] = -1; // negative one is the surrogate for infinity
     ds[z] = 0;
     cd = 0;
-    do
-    {
+    do {
         fl = 0;
         for (i = 0; i < V; i++)
-            if (ds[i] == cd)
-            {                       // if we are at current distance
+            if (ds[i] == cd) {                       // if we are at current distance
                 qq = nbr[i].size(); // get the size to prevent repeated function calls
-                for (j = 0; j < qq; j++)
-                {                        // loop over neighbors
+                for (j = 0; j < qq; j++) {                        // loop over neighbors
                     vv = nbr[i].memz(j); // get the neighbor
-                    if (clr[vv] == 0)
-                    { // if the neighbor is color zero
-                        if (ds[vv] == -1)
-                        {                    // if we have not been here yet...
+                    if (clr[vv] == 0) { // if the neighbor is color zero
+                        if (ds[vv] == -1) {                    // if we have not been here yet...
                             ds[vv] = cd + 1; // assign the distance
                             fl = 1;          // and set the flag
                         }
@@ -1827,8 +1623,7 @@ void graph::dfrom0(int z, int *ds)
     } while (fl == 1); // until done
 }
 
-int graph::ecc(int z)
-{ // eccentricity of a vertex
+int graph::ecc(int z) { // eccentricity of a vertex
 
     int *q;    // distance table
     int i, rv; // loop index, return value
@@ -1841,10 +1636,8 @@ int graph::ecc(int z)
     q = new int[V]; // create distance array
     dfrom(z, q);    // compute distances from 0
     rv = 0;         // initialize the eccentricity
-    for (i = 0; i < V; i++)
-    { // loop over the vertices
-        if (q[i] == -1)
-        {
+    for (i = 0; i < V; i++) { // loop over the vertices
+        if (q[i] == -1) {
             delete[] q;
             return (-1);
         } // the graph is disconnected
@@ -1855,8 +1648,7 @@ int graph::ecc(int z)
     return (rv); // return the eccentricity
 }
 
-int graph::diameter()
-{ // eccentricity of a vertex
+int graph::diameter() { // eccentricity of a vertex
 
     int rv; // return value
     int i;  // index variable
@@ -1865,8 +1657,7 @@ int graph::diameter()
     rv = ecc(0); // initialize return value
     if (rv == -1)
         return (-1); // disconnected graph
-    for (i = 1; i < V; i++)
-    {                // Find the maximum eccentricity
+    for (i = 1; i < V; i++) {                // Find the maximum eccentricity
         cv = ecc(i); // compute
         if (cv > rv)
             rv = cv; // update
@@ -1874,8 +1665,7 @@ int graph::diameter()
     return (rv); // return diameter
 }
 
-int graph::radius()
-{ // eccentricity of a vertex
+int graph::radius() { // eccentricity of a vertex
 
     int rv; // return value
     int i;  // index variable
@@ -1884,8 +1674,7 @@ int graph::radius()
     rv = ecc(0); // initialize return value
     if (rv == -1)
         return (-1); // graph is disconnected
-    for (i = 1; i < V; i++)
-    {                // Find the maximum eccentricity
+    for (i = 1; i < V; i++) {                // Find the maximum eccentricity
         cv = ecc(i); // compute
         if (cv < rv)
             rv = cv; // update
@@ -1893,8 +1682,7 @@ int graph::radius()
     return (rv); // return diameter
 }
 
-int graph::connectedP()
-{ // is the graph connected?
+int graph::connectedP() { // is the graph connected?
 
     int *q;
     int i, rv;
@@ -1913,11 +1701,9 @@ int graph::connectedP()
     return (rv);
 }
 
-void graph::eccSeq(int *ecs)
-{ // compute the eccentricity sequence
+void graph::eccSeq(int *ecs) { // compute the eccentricity sequence
 
-    if ((M == 0) || (V == 0))
-    { // failsafe empty graphs
+    if ((M == 0) || (V == 0)) { // failsafe empty graphs
         ecs[0] = 0;
         return;
     }
@@ -1925,11 +1711,9 @@ void graph::eccSeq(int *ecs)
     int i, j; // loop index variables
     int *ds;
 
-    if (connectedP() == 1)
-    {
+    if (connectedP() == 1) {
         ds = new int[V]; // create distance buffer
-        for (i = 0; i < V; i++)
-        {                 // loop over vertices
+        for (i = 0; i < V; i++) {                 // loop over vertices
             ecs[i] = 0;   // zero eccentricity
             dfrom(i, ds); // find distances
             for (j = 0; j < V; j++)
@@ -1937,14 +1721,12 @@ void graph::eccSeq(int *ecs)
                     ecs[i] = ds[j]; // find eccentricity
         }
         delete[] ds;
-    }
-    else
+    } else
         for (i = 0; i < V; i++)
             ecs[i] = -1; // all distances infinite
 }
 
-int graph::nbrmod(int v, int n)
-{ // compute the n%degreeth neighbor of v
+int graph::nbrmod(int v, int n) { // compute the n%degreeth neighbor of v
 
     if ((v >= V) || (v < 0))
         return (0); // return zero for stupid request
@@ -1953,39 +1735,36 @@ int graph::nbrmod(int v, int n)
 }
 
 // TODO modify for weighted graph
-int graph::degree(int v)
-{ // report the degree of v
+int graph::degree(int v) { // report the degree of v
 
     if ((v >= V) || (v < 0))
         return (0); // return zero for stupid request
-                    //   int tmp = nbr[v].size();
-                    //   if(tmp == 0) {return 0;}
-                    //   int result = 1;
-                    //   for(int i=0; i<tmp-1; i++){
-                    //       if (nbr[v].memz(i) == nbr[v].memz(i+1)){
-                    //           continue;
-                    //       }
-                    //       else {
-                    //           result++;
-                    //       }
-                    //   }
-                    //   return result;
+    //   int tmp = nbr[v].size();
+    //   if(tmp == 0) {return 0;}
+    //   int result = 1;
+    //   for(int i=0; i<tmp-1; i++){
+    //       if (nbr[v].memz(i) == nbr[v].memz(i+1)){
+    //           continue;
+    //       }
+    //       else {
+    //           result++;
+    //       }
+    //   }
+    //   return result;
     return (nbr[v].size());
 }
 
-double graph::meandegree()
-{ // report the mean degree of the graph
+double graph::meandegree() { // report the mean degree of the graph
 
     double accu;
 
     accu = 0.0;
     for (int i = 0; i < V; i++)
         accu += nbr[i].size();
-    return (accu / ((double)V));
+    return (accu / ((double) V));
 }
 
-int graph::Nbrs(int v, int *nb)
-{ // report the neighboors of v
+int graph::Nbrs(int v, int *nb) { // report the neighboors of v
 
     int q, i; // degree and loop index
 
@@ -1998,8 +1777,7 @@ int graph::Nbrs(int v, int *nb)
     return (q);
 }
 
-int graph::MaxCol()
-{ // report the maximal color
+int graph::MaxCol() { // report the maximal color
 
     if ((M == 0) || (clr == 0))
         return (0); // no colors, return zero value
@@ -2014,8 +1792,7 @@ int graph::MaxCol()
     return (b);
 }
 
-void graph::DiffChar(int v, double omega, double *dc)
-{ // diffusion character at v
+void graph::DiffChar(int v, double omega, double *dc) { // diffusion character at v
 
     double *sm;  // summation buffer
     int i, j, t; // index variables
@@ -2029,15 +1806,13 @@ void graph::DiffChar(int v, double omega, double *dc)
     sm = new double[V]; // allocate the sum buffer
     for (i = 0; i < V; i++)
         dc[i] = 0.0; // zero the initial diffusion character
-    for (t = 0; t < 6 * V; t++)
-    { // loop over time steps
+    for (t = 0; t < 6 * V; t++) { // loop over time steps
         for (i = 0; i < V; i++)
             sm[i] = 0.0; // zero the summation buffer
         dc[v] += 1.0;    // add gas to the center vertex
-        for (i = 0; i < V; i++)
-        {                             // loop over vertives
+        for (i = 0; i < V; i++) {                             // loop over vertives
             k = degree(i);            // get the degree
-            curd = ((double)k) + 1.0; // make the divisor
+            curd = ((double) k) + 1.0; // make the divisor
             for (j = 0; j < k; j++)
                 sm[nbrmod(i, j)] += dc[i] / curd; // move the gas
             sm[i] += dc[i] / curd;                // and a little gas stays
@@ -2051,67 +1826,47 @@ void graph::DiffChar(int v, double omega, double *dc)
 
 // Quality and weight handling
 
-void graph::RecordQ(int num, int dex, int val)
-{ // Q[num][dex]=val
+void graph::RecordQ(int num, int dex, int val) { // Q[num][dex]=val
 
-    if ((num >= 0) && (num < MAXQ) && (quality[num] != 0))
-    { // if the quality is there
-        if ((dex >= 0) && (dex < V))
-        {                            // if vertex is there
+    if ((num >= 0) && (num < MAXQ) && (quality[num] != 0)) { // if the quality is there
+        if ((dex >= 0) && (dex < V)) {                            // if vertex is there
             quality[num][dex] = val; // record the value
         }
     }
 }
 
-void graph::RecordW(int num, int dex, double val)
-{ // W[num][dex]=val
+void graph::RecordW(int num, int dex, double val) { // W[num][dex]=val
 
-    if ((num >= 0) && (num < MAXQ) && (weights[num] != 0))
-    { // if the quality is there
-        if ((dex >= 0) && (dex < V))
-        {                            // if vertex is there
+    if ((num >= 0) && (num < MAXQ) && (weights[num] != 0)) { // if the quality is there
+        if ((dex >= 0) && (dex < V)) {                            // if vertex is there
             weights[num][dex] = val; // record the value
         }
     }
 }
 
 // TODO remove extra returns
-int graph::RetrieveQ(int num, int dex)
-{ // return Q[num][dex]
+int graph::RetrieveQ(int num, int dex) { // return Q[num][dex]
 
-    if ((num >= 0) && (num < MAXQ) && (quality[num] != 0))
-    { // if the quality is there
-        if ((dex >= 0) && (dex < V))
-        { // if vertex is there
+    if ((num >= 0) && (num < MAXQ) && (quality[num] != 0)) { // if the quality is there
+        if ((dex >= 0) && (dex < V)) { // if vertex is there
             return (quality[num][dex]);
-        }
-        else
-        {
+        } else {
             return 0;
         }
-    }
-    else
-    {
+    } else {
         return 0;
     }
 }
 
-double graph::RetrieveW(int num, int dex)
-{ // return Q[num][dex]
+double graph::RetrieveW(int num, int dex) { // return Q[num][dex]
 
-    if ((num >= 0) && (num < MAXQ) && (weights[num] != 0))
-    { // if the quality is there
-        if ((dex >= 0) && (dex < V))
-        { // if vertex is there
+    if ((num >= 0) && (num < MAXQ) && (weights[num] != 0)) { // if the quality is there
+        if ((dex >= 0) && (dex < V)) { // if vertex is there
             return (weights[num][dex]);
-        }
-        else
-        {
+        } else {
             return 0;
         }
-    }
-    else
-    {
+    } else {
         return 0;
     }
 }
@@ -2125,8 +1880,7 @@ double graph::RetrieveW(int num, int dex)
  *
  *
  */
-void graph::SIR(int p0, int &max, int &len, int &ttl, double alpha)
-{ // Sir Method
+void graph::SIR(int p0, int &max, int &len, int &ttl, double alpha) { // Sir Method
 
     int NI;      // number of infected individuals
     int i, j, k; // loop index variables
@@ -2136,21 +1890,19 @@ void graph::SIR(int p0, int &max, int &len, int &ttl, double alpha)
 
     if ((V == 0) || (p0 >= V))
         return; // no one was infected...
-                //     if ((V == 0) || (p0 > 0) || (p0 >= V))return; //no one was infected...
+    //     if ((V == 0) || (p0 > 0) || (p0 >= V))return; //no one was infected...
 
     nin = new int[V]; // create infected neioghbor counters
     setC2(0);         // set the population to susceptible
     clr[p0] = 1;      // infect patient zero
     NI = 1;           // initialize to one person currently infected
     len = 0;          // initialize length variable
-    while (NI > 0)
-    { // while there is still an epidemic
+    while (NI > 0) { // while there is still an epidemic
         // cout << "LEN=" << len << " NI=" << NI << endl;
         for (i = 0; i < V; i++)
             nin[i] = 0; // zero the number of infected neighbors buffer
         for (i = 0; i < V; i++)
-            if (clr[i] == 1)
-            { // found infected individual
+            if (clr[i] == 1) { // found infected individual
                 for (j = 0; j < nbr[i].size(); j++)
                     nin[nbr[i].memz(j)]++; // record exposure
             }
@@ -2163,19 +1915,18 @@ void graph::SIR(int p0, int &max, int &len, int &ttl, double alpha)
         ttl += NI;    // add the infected to the total
         NI = 0;       // zero the number infected counter
         for (i = 0; i < V; i++)
-            switch (clr[i])
-            {       // status update
-            case 0: // susceptible, do nothing
-                break;
-            case 1: // infected, move to removed
-                clr[i] = 2;
-                break;
-            case 2: // removed, do nothing
-                break;
-            case 3: // newly infected
-                clr[i] = 1;
-                NI++;
-                break;
+            switch (clr[i]) {       // status update
+                case 0: // susceptible, do nothing
+                    break;
+                case 1: // infected, move to removed
+                    clr[i] = 2;
+                    break;
+                case 2: // removed, do nothing
+                    break;
+                case 3: // newly infected
+                    clr[i] = 1;
+                    NI++;
+                    break;
             }
         len++; // record the time step
     }
@@ -2184,8 +1935,7 @@ void graph::SIR(int p0, int &max, int &len, int &ttl, double alpha)
 
 // This is a modification of the SIRProfile routine that adds a susceptible state
 void graph::SIRRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
-                         double *prof)
-{ // Sir Method, with profile
+                         double *prof) { // Sir Method, with profile
 
     int NI;      // number of infected individuals
     int i, j, k; // loop index variables
@@ -2194,7 +1944,7 @@ void graph::SIRRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
     max = len = ttl = 0; // zero the reporting statistics
     if ((V == 0) || (p0 >= V))
         return; // no one was infected...
-                //     if ((V == 0) || (p0 > 0) || (p0 >= V))return; //no one was infected...
+    //     if ((V == 0) || (p0 > 0) || (p0 >= V))return; //no one was infected...
 
     for (i = 0; i < V; i++)
         prof[i] = 0; // zero the profile array
@@ -2206,21 +1956,18 @@ void graph::SIRRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
     len = 0;          // initialize length variable
     prof[len] = 1.0;  // record patient zero
 
-    while (NI > 0)
-    { // while there is still an epidemic
+    while (NI > 0) { // while there is still an epidemic
         // cout << "LEN=" << len << " NI=" << NI << endl;
         for (i = 0; i < V; i++)
             nin[i] = 0; // zero the number of infected neighbors buffer
         for (i = 0; i < V; i++)
-            if (clr[i] == 1)
-            { // found infected individual
+            if (clr[i] == 1) { // found infected individual
                 for (j = 0; j < nbr[i].size(); j++)
                     nin[nbr[i].memz(j)]++; // record exposure
             }
         // check for transmission
         for (i = 0; i < V; i++)
-            if ((clr[i] == 0) && (nin[i] > 0))
-            {
+            if ((clr[i] == 0) && (nin[i] > 0)) {
                 clr[i] = 3 * infected(nin[i], alpha);
             }
         if (NI > max)
@@ -2228,41 +1975,39 @@ void graph::SIRRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
         ttl += NI;    // add the infected to the total
         NI = 0;       // zero the number infected counter
         for (i = 0; i < V; i++)
-            switch (clr[i])
-            {       // status update
-            case 0: // susceptible, do nothing
-                break;
-            case 1: // infected, move to removed
-                clr[i] = 2;
-                break;
-            case 2: // removed, add to second removed state
-                clr[i] = 4;
-                break;
-            case 3: // newly infected
-                clr[i] = 1;
-                NI++;
-                prof[len + 1] += 1.0; // record the infection
-                break;
-            case 4: // second removed state, make susceptible
-                clr[i] = 5;
-                break;
-            case 5:
-                clr[i] = 0;
-                break;
+            switch (clr[i]) {       // status update
+                case 0: // susceptible, do nothing
+                    break;
+                case 1: // infected, move to removed
+                    clr[i] = 2;
+                    break;
+                case 2: // removed, add to second removed state
+                    clr[i] = 4;
+                    break;
+                case 3: // newly infected
+                    clr[i] = 1;
+                    NI++;
+                    prof[len + 1] += 1.0; // record the infection
+                    break;
+                case 4: // second removed state, make susceptible
+                    clr[i] = 5;
+                    break;
+                case 5:
+                    clr[i] = 0;
+                    break;
             }
         len++; // record the time step
-        if (len >= V)
-        {
+        if (len >= V) {
             NI = 0;
             break;
         }
     }
     delete[] nin; // return storage for nin buffer
 }
+
 // This is a modification of the SIRProfile routine that adds a susceptible state
 void graph::SIRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
-                        double *prof)
-{ // Sir Method, with profile
+                        double *prof) { // Sir Method, with profile
 
     int NI;      // number of infected individuals
     int i, j, k; // loop index variables
@@ -2271,7 +2016,7 @@ void graph::SIRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
     max = len = ttl = 0; // zero the reporting statistics
     if ((V == 0) || (p0 >= V))
         return; // no one was infected...
-                //     if ((V == 0) || (p0 > 0) || (p0 >= V))return; //no one was infected...
+    //     if ((V == 0) || (p0 > 0) || (p0 >= V))return; //no one was infected...
 
     for (i = 0; i < V; i++)
         prof[i] = 0; // zero the profile array
@@ -2283,21 +2028,18 @@ void graph::SIRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
     len = 0;          // initialize length variable
     prof[len] = 1.0;  // record patient zero
 
-    while (NI > 0)
-    { // while there is still an epidemic
+    while (NI > 0) { // while there is still an epidemic
         // cout << "LEN=" << len << " NI=" << NI << endl;
         for (i = 0; i < V; i++)
             nin[i] = 0; // zero the number of infected neighbors buffer
         for (i = 0; i < V; i++)
-            if (clr[i] == 1)
-            { // found infected individual
+            if (clr[i] == 1) { // found infected individual
                 for (j = 0; j < nbr[i].size(); j++)
                     nin[nbr[i].memz(j)]++; // record exposure
             }
         // check for transmission
         for (i = 0; i < V; i++)
-            if ((clr[i] == 0) && (nin[i] > 0))
-            {
+            if ((clr[i] == 0) && (nin[i] > 0)) {
                 clr[i] = 3 * infected(nin[i], alpha);
             }
         if (NI > max)
@@ -2305,25 +2047,23 @@ void graph::SIRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
         ttl += NI;    // add the infected to the total
         NI = 0;       // zero the number infected counter
         for (i = 0; i < V; i++)
-            switch (clr[i])
-            {       // status update
-            case 0: // susceptible, do nothing
-                break;
-            case 1: // infected, move to removed
-                clr[i] = 2;
-                break;
-            case 2: // removed, make susceptible
-                clr[i] = 0;
-                break;
-            case 3: // newly infected
-                clr[i] = 1;
-                NI++;
-                prof[len + 1] += 1.0; // record the infection
-                break;
+            switch (clr[i]) {       // status update
+                case 0: // susceptible, do nothing
+                    break;
+                case 1: // infected, move to removed
+                    clr[i] = 2;
+                    break;
+                case 2: // removed, make susceptible
+                    clr[i] = 0;
+                    break;
+                case 3: // newly infected
+                    clr[i] = 1;
+                    NI++;
+                    prof[len + 1] += 1.0; // record the infection
+                    break;
             }
         len++; // record the time step
-        if (len >= V)
-        {
+        if (len >= V) {
             NI = 0;
             break;
         }
@@ -2335,8 +2075,7 @@ void graph::SIRSProfile(int p0, int &max, int &len, int &ttl, double alpha,
 // should be a double array with as many positions as the number of
 // vertices.  It returns the number of people infected in each time step.
 void graph::SIRProfile(int p0, int &max, int &len, int &ttl, double alpha,
-                       double *prof)
-{ // Sir Method, with profile
+                       double *prof) { // Sir Method, with profile
 
     int NI;      // number of infected individuals
     int i, j, k; // loop index variables
@@ -2345,7 +2084,7 @@ void graph::SIRProfile(int p0, int &max, int &len, int &ttl, double alpha,
     max = len = ttl = 0; // zero the reporting statistics
     if ((V == 0) || (p0 >= V))
         return; // no one was infected...
-                //     if ((V == 0) || (p0 > 0) || (p0 >= V))return; //no one was infected...
+    //     if ((V == 0) || (p0 > 0) || (p0 >= V))return; //no one was infected...
 
     for (i = 0; i < V; i++)
         prof[i] = 0; // zero the profile array
@@ -2357,14 +2096,12 @@ void graph::SIRProfile(int p0, int &max, int &len, int &ttl, double alpha,
     len = 0;          // initialize length variable
     prof[len] = 1.0;  // record patient zero
 
-    while (NI > 0)
-    { // while there is still an epidemic
+    while (NI > 0) { // while there is still an epidemic
         // cout << "LEN=" << len << " NI=" << NI << endl;
         for (i = 0; i < V; i++)
             nin[i] = 0; // zero the number of infected neighbors buffer
         for (i = 0; i < V; i++)
-            if (clr[i] == 1)
-            { // found infected individual
+            if (clr[i] == 1) { // found infected individual
                 for (j = 0; j < nbr[i].size(); j++)
                     nin[nbr[i].memz(j)]++; // record exposure
             }
@@ -2377,20 +2114,19 @@ void graph::SIRProfile(int p0, int &max, int &len, int &ttl, double alpha,
         ttl += NI;    // add the infected to the total
         NI = 0;       // zero the number infected counter
         for (i = 0; i < V; i++)
-            switch (clr[i])
-            {       // status update
-            case 0: // susceptible, do nothing
-                break;
-            case 1: // infected, move to removed
-                clr[i] = 2;
-                break;
-            case 2: // removed, do nothing
-                break;
-            case 3: // newly infected
-                clr[i] = 1;
-                NI++;
-                prof[len + 1] += 1.0; // record the infection
-                break;
+            switch (clr[i]) {       // status update
+                case 0: // susceptible, do nothing
+                    break;
+                case 1: // infected, move to removed
+                    clr[i] = 2;
+                    break;
+                case 2: // removed, do nothing
+                    break;
+                case 3: // newly infected
+                    clr[i] = 1;
+                    NI++;
+                    prof[len + 1] += 1.0; // record the infection
+                    break;
             }
         len++; // record the time step
     }
@@ -2398,8 +2134,7 @@ void graph::SIRProfile(int p0, int &max, int &len, int &ttl, double alpha,
 }
 
 /* This routine duplicates SIR except that it assigns patient zero at random */
-void graph::SIRr(int &max, int &len, int &ttl, double alpha)
-{ // Sir Method
+void graph::SIRr(int &max, int &len, int &ttl, double alpha) { // Sir Method
 
     int NI;      // number of infected individuals
     int i, j, k; // loop index variables
@@ -2412,14 +2147,12 @@ void graph::SIRr(int &max, int &len, int &ttl, double alpha)
     clr[lrand48() % M] = 1; // choose and infect patient zero
     NI = 1;                 // initialize to one person currently infected
     len = 0;                // initialize length variable
-    while (NI > 0)
-    { // while there is still an epidemic
+    while (NI > 0) { // while there is still an epidemic
         // cout << "LEN=" << len << " NI=" << NI << endl;
         for (i = 0; i < V; i++)
             nin[i] = 0; // zero the number of infected neighbors buffer
         for (i = 0; i < V; i++)
-            if (clr[i] == 1)
-            { // found infected individual
+            if (clr[i] == 1) { // found infected individual
                 for (j = 0; j < nbr[i].size(); j++)
                     nin[nbr[i].memz(j)]++; // record exposure
             }
@@ -2432,19 +2165,18 @@ void graph::SIRr(int &max, int &len, int &ttl, double alpha)
         ttl += NI;    // add the infected to the total
         NI = 0;       // zero the number infected counter
         for (i = 0; i < V; i++)
-            switch (clr[i])
-            {       // status update
-            case 0: // susceptible, do nothing
-                break;
-            case 1: // infected, move to removed
-                clr[i] = 2;
-                break;
-            case 2: // removed, do nothing
-                break;
-            case 3: // newly infected
-                clr[i] = 1;
-                NI++;
-                break;
+            switch (clr[i]) {       // status update
+                case 0: // susceptible, do nothing
+                    break;
+                case 1: // infected, move to removed
+                    clr[i] = 2;
+                    break;
+                case 2: // removed, do nothing
+                    break;
+                case 3: // newly infected
+                    clr[i] = 1;
+                    NI++;
+                    break;
             }
         len++; // record the time step
     }
@@ -2459,8 +2191,7 @@ void graph::SIRr(int &max, int &len, int &ttl, double alpha)
 // if q is -1 then it is assigned the first time the routine is called
 // This routine returns the number of sick people
 // The status of patients are stored in the quality
-int graph::SIRupdate(int &q, double alpha, double advance)
-{ // one time step
+int graph::SIRupdate(int &q, double alpha, double advance) { // one time step
 
     int i, j;       // loop indices
     int nsp;        // number of sick people
@@ -2470,47 +2201,40 @@ int graph::SIRupdate(int &q, double alpha, double advance)
     int nq;         // neighbor's quality
     int scratch[V]; // new qualities
 
-    if (q == -1)
-    {                     // Allocate a quality
+    if (q == -1) {                     // Allocate a quality
         q = RQquality(0); // request a quality and allocate it to susceptable
         RecordQ(q, 0, 1); // make the zeroth vertix patient zero
     }
 
     nsp = 0; // zero the sick person counter
-    for (i = 0; i < V; i++)
-    { // loop over vertices
+    for (i = 0; i < V; i++) { // loop over vertices
         cp = RetrieveQ(q, i);
-        switch (cp)
-        {                    // SIR
-        case 0:              // susceptible
-            deg = degree(i); // get the number of neighbors
-            nsn = 0;         // zero the sick neighbor counter
-            for (j = 0; j < deg; j++)
-            {                                    // loop over neighbors
-                nq = RetrieveQ(q, nbrmod(i, j)); // get the neighbor's status
-                if (nq == 1)
-                    nsn++; // count the sick neighbor
-            }              // now we know the number of sick neighbors
-            if ((nsn > 0) && (infected(nsn, alpha)))
-            {                   // new infected
-                scratch[i] = 1; // note the infection
-                nsp++;          // record the infection
-            }
-            else
-                scratch[i] = 0; // stayed susceptible
-            break;
-        case 1: // infected
-            if (drand48() < advance)
-                scratch[i] = 2; // remove!
-            else
-            {
-                scratch[i] = 1;
-                nsp++;
-            } // preserve and record infection
-            break;
-        case 2:             // removed
-            scratch[i] = 2; // stay removed
-            break;
+        switch (cp) {                    // SIR
+            case 0:              // susceptible
+                deg = degree(i); // get the number of neighbors
+                nsn = 0;         // zero the sick neighbor counter
+                for (j = 0; j < deg; j++) {                                    // loop over neighbors
+                    nq = RetrieveQ(q, nbrmod(i, j)); // get the neighbor's status
+                    if (nq == 1)
+                        nsn++; // count the sick neighbor
+                }              // now we know the number of sick neighbors
+                if ((nsn > 0) && (infected(nsn, alpha))) {                   // new infected
+                    scratch[i] = 1; // note the infection
+                    nsp++;          // record the infection
+                } else
+                    scratch[i] = 0; // stayed susceptible
+                break;
+            case 1: // infected
+                if (drand48() < advance)
+                    scratch[i] = 2; // remove!
+                else {
+                    scratch[i] = 1;
+                    nsp++;
+                } // preserve and record infection
+                break;
+            case 2:             // removed
+                scratch[i] = 2; // stay removed
+                break;
         }
     }
     for (i = 0; i < V; i++)
@@ -2530,8 +2254,7 @@ int graph::SEIRupdate(int &q, double alpha, // pairwise infection
                       double infec,         // E->I transition
                       double asym,          // E->R transition
                       double advance        // I->R transition
-)
-{ // one time step
+) { // one time step
 
     int i, j;       // loop indices
     int nsp;        // number of sick people
@@ -2542,64 +2265,52 @@ int graph::SEIRupdate(int &q, double alpha, // pairwise infection
     int scratch[V]; // new qualities
     double dart;    // used to resolve multiple probabilities
 
-    if (q == -1)
-    {                     // Allocate a quality
+    if (q == -1) {                     // Allocate a quality
         q = RQquality(0); // request a quality and allocate it to susceptable
         RecordQ(q, 0, 1); // make the zeroth vertix patient zero
     }
 
     nsp = 0; // zero the sick person counter
-    for (i = 0; i < V; i++)
-    {                         // loop over vertices
+    for (i = 0; i < V; i++) {                         // loop over vertices
         cp = RetrieveQ(q, i); // get the agent's status
-        switch (cp)
-        {                    // SIR
-        case 0:              // susceptible
-            deg = degree(i); // get the number of neighbors
-            nsn = 0;         // zero the sick neighbor counter
-            for (j = 0; j < deg; j++)
-            {                                    // loop over neighbors
-                nq = RetrieveQ(q, nbrmod(i, j)); // get the neighbor's status
-                if ((nq == 1) || (nq == 2))
-                    nsn++; // count the sick neighbors
-            }              // now we know the number of sick neighbors
-            if ((nsn > 0) && (infected(nsn, alpha)))
-            {                   // new infected
-                scratch[i] = 1; // note the infection
-                nsp++;          // record the infection
-            }
-            else
-                scratch[i] = 0; // stayed susceptible
-            break;
-        case 1: // Exposed
-            dart = drand48();
-            if (dart < infec)
-            {                   // exposed transitioned to infected
-                scratch[i] = 2; // record infected status
-                nsp++;          // increment number of sick people
-            }
-            else if (dart < infec + asym)
-            {                   // transition directly to removed
-                scratch[i] = 3; // record removed status
-            }
-            else
-            {                   // stay exposed
-                scratch[i] = 1; // record exposed status
-                nsp++;          // increment number of sick people
-            }
-            break;
-        case 2: // infected
-            if (drand48() < advance)
-                scratch[i] = 3; // remove!
-            else
-            {
-                scratch[i] = 2;
-                nsp++;
-            } // preserve and record infection
-            break;
-        case 3:             // removed
-            scratch[i] = 3; // stay removed
-            break;
+        switch (cp) {                    // SIR
+            case 0:              // susceptible
+                deg = degree(i); // get the number of neighbors
+                nsn = 0;         // zero the sick neighbor counter
+                for (j = 0; j < deg; j++) {                                    // loop over neighbors
+                    nq = RetrieveQ(q, nbrmod(i, j)); // get the neighbor's status
+                    if ((nq == 1) || (nq == 2))
+                        nsn++; // count the sick neighbors
+                }              // now we know the number of sick neighbors
+                if ((nsn > 0) && (infected(nsn, alpha))) {                   // new infected
+                    scratch[i] = 1; // note the infection
+                    nsp++;          // record the infection
+                } else
+                    scratch[i] = 0; // stayed susceptible
+                break;
+            case 1: // Exposed
+                dart = drand48();
+                if (dart < infec) {                   // exposed transitioned to infected
+                    scratch[i] = 2; // record infected status
+                    nsp++;          // increment number of sick people
+                } else if (dart < infec + asym) {                   // transition directly to removed
+                    scratch[i] = 3; // record removed status
+                } else {                   // stay exposed
+                    scratch[i] = 1; // record exposed status
+                    nsp++;          // increment number of sick people
+                }
+                break;
+            case 2: // infected
+                if (drand48() < advance)
+                    scratch[i] = 3; // remove!
+                else {
+                    scratch[i] = 2;
+                    nsp++;
+                } // preserve and record infection
+                break;
+            case 3:             // removed
+                scratch[i] = 3; // stay removed
+                break;
         }
     }
     for (i = 0; i < V; i++)
@@ -2623,8 +2334,7 @@ int graph::SEEpIRupdate(int &q, double alpha, // pairwise infection
                         double visible,       // Ep->I transition
                         double asym,          // Ep->R transition
                         double advance        // I->R transition
-)
-{ // one time step
+) { // one time step
 
     int i, j;       // loop indices
     int nsp;        // number of sick people
@@ -2635,73 +2345,60 @@ int graph::SEEpIRupdate(int &q, double alpha, // pairwise infection
     int scratch[V]; // new qualities
     double dart;    // used to resolve multiple probabilities
 
-    if (q == -1)
-    {                     // Allocate a quality
+    if (q == -1) {                     // Allocate a quality
         q = RQquality(0); // request a quality and allocate it to susceptable
         RecordQ(q, 0, 1); // make the zeroth vertix patient zero
     }
 
     nsp = 0; // zero the sick person counter
-    for (i = 0; i < V; i++)
-    {                         // loop over vertices
+    for (i = 0; i < V; i++) {                         // loop over vertices
         cp = RetrieveQ(q, i); // get the agent's status
-        switch (cp)
-        {                    // SIR
-        case 0:              // susceptible
-            deg = degree(i); // get the number of neighbors
-            nsn = 0;         // zero the sick neighbor counter
-            for (j = 0; j < deg; j++)
-            {                                    // loop over neighbors
-                nq = RetrieveQ(q, nbrmod(i, j)); // get the neighbor's status
-                if ((nq == 2) || (nq == 3))
-                    nsn++; // count the sick neighbors
-            }              // now we know the number of sick neighbors
-            if ((nsn > 0) && (infected(nsn, alpha)))
-            {                   // new infected
-                scratch[i] = 1; // note the infection
-                nsp++;          // record the infection
-            }
-            else
-                scratch[i] = 0; // stayed susceptible
-            break;
-        case 1: // Exposed
-            dart = drand48();
-            if (dart < infec)
-            {                   // exposed transitioned to infected
-                scratch[i] = 2; // record infected status, moves to Ep
-                nsp++;          // increment number of sick people
-            }
-            else
-            {                   // stay exposed
-                scratch[i] = 1; // record exposed status
-                nsp++;          // increment number of sick people
-            }
-            break;
-        case 2: // Exposed prime
-            dart = drand48();
-            if (dart < visible)
-            {                   // exposed prime transitioned to infected
-                scratch[i] = 3; // record infected status, moves to Ep
-                nsp++;          // increment number of sick people
-            }
-            else
-            {                   // stay exposed prime
-                scratch[i] = 2; // record exposed status
-                nsp++;          // increment number of sick people
-            }
-            break;
-        case 3: // Infected
-            if (drand48() < advance)
-                scratch[i] = 4; // remove!
-            else
-            {
-                scratch[i] = 3;
-                nsp++;
-            } // preserve and record infection
-            break;
-        case 4:             // removed
-            scratch[i] = 4; // stay removed
-            break;
+        switch (cp) {                    // SIR
+            case 0:              // susceptible
+                deg = degree(i); // get the number of neighbors
+                nsn = 0;         // zero the sick neighbor counter
+                for (j = 0; j < deg; j++) {                                    // loop over neighbors
+                    nq = RetrieveQ(q, nbrmod(i, j)); // get the neighbor's status
+                    if ((nq == 2) || (nq == 3))
+                        nsn++; // count the sick neighbors
+                }              // now we know the number of sick neighbors
+                if ((nsn > 0) && (infected(nsn, alpha))) {                   // new infected
+                    scratch[i] = 1; // note the infection
+                    nsp++;          // record the infection
+                } else
+                    scratch[i] = 0; // stayed susceptible
+                break;
+            case 1: // Exposed
+                dart = drand48();
+                if (dart < infec) {                   // exposed transitioned to infected
+                    scratch[i] = 2; // record infected status, moves to Ep
+                    nsp++;          // increment number of sick people
+                } else {                   // stay exposed
+                    scratch[i] = 1; // record exposed status
+                    nsp++;          // increment number of sick people
+                }
+                break;
+            case 2: // Exposed prime
+                dart = drand48();
+                if (dart < visible) {                   // exposed prime transitioned to infected
+                    scratch[i] = 3; // record infected status, moves to Ep
+                    nsp++;          // increment number of sick people
+                } else {                   // stay exposed prime
+                    scratch[i] = 2; // record exposed status
+                    nsp++;          // increment number of sick people
+                }
+                break;
+            case 3: // Infected
+                if (drand48() < advance)
+                    scratch[i] = 4; // remove!
+                else {
+                    scratch[i] = 3;
+                    nsp++;
+                } // preserve and record infection
+                break;
+            case 4:             // removed
+                scratch[i] = 4; // stay removed
+                break;
         }
     }
     for (i = 0; i < V; i++)
@@ -2717,8 +2414,7 @@ int graph::SEEIARupdate(int &q, double alpha, // pairwise infection
                         double cksee,         // Ep->A transition
                         double gamma,         // A,I -> R transition
                         double epsilon        // R->S transition
-)
-{ // one time step
+) { // one time step
 
     int i, j;       // loop indices
     int nsp;        // number of sick people
@@ -2729,93 +2425,77 @@ int graph::SEEIARupdate(int &q, double alpha, // pairwise infection
     int scratch[V]; // new qualities
     double dart;    // used to resolve multiple probabilities
 
-    if (q == -1)
-    {                     // Allocate a quality
+    if (q == -1) {                     // Allocate a quality
         q = RQquality(0); // request a quality and allocate it to susceptable
         RecordQ(q, 0, 1); // make the zeroth vertix patient zero
     }
 
     nsp = 0; // zero the sick person counter
-    for (i = 0; i < V; i++)
-    {                         // loop over vertices
+    for (i = 0; i < V; i++) {                         // loop over vertices
         cp = RetrieveQ(q, i); // get the agent's status
-        switch (cp)
-        {                    // SIR
-        case 0:              // susceptible
-            deg = degree(i); // get the number of neighbors
-            nsn = 0;         // zero the sick neighbor counter
-            for (j = 0; j < deg; j++)
-            {                                    // loop over neighbors
-                nq = RetrieveQ(q, nbrmod(i, j)); // get the neighbor's status
-                if ((nq != 0) && (nq != 5))
-                    nsn++; // count the sick neighbors
-            }              // now we know the number of sick neighbors
-            if ((nsn > 0) && (infected(nsn, alpha)))
-            {                   // new infected
-                scratch[i] = 1; // note the infection
-                nsp++;          // record the infection
-            }
-            else
-                scratch[i] = 0; // stayed susceptible
-            break;
-        case 1: // Exposed
-            dart = drand48();
-            if (dart < infec)
-            {                   // exposed transitioned to infected
-                scratch[i] = 2; // record infected status, moves to Ep
-                nsp++;          // increment number of sick people
-            }
-            else
-            {                   // stay exposed
-                scratch[i] = 1; // record exposed status
-                nsp++;          // increment number of sick people
-            }
-            break;
-        case 2: // Exposed prime
-            dart = drand48();
-            if (dart < infecP)
-            {                   // exposed prime transitioned to infected
-                scratch[i] = 3; // record infected status, moves to Ep
-                nsp++;          // increment number of sick people
-            }
-            else if (dart < infecP + cksee)
-            { // Exposed prime transition to long term A
-                scratch[i] = 4;
-                nsp++;
-            }
-            else
-            {                   // stay exposed prime
-                scratch[i] = 2; // record exposed status
-                nsp++;          // increment number of sick people
-            }
-            break;
-        case 3:               // Infected
-            dart = drand48(); // throw the dart
-            if (dart < gamma)
-                scratch[i] = 5; // remove!
-            else
-            {
-                scratch[i] = 3;
-                nsp++;
-            } // preserve and record infection
-            break;
-        case 4:               // Long term asymptomatic
-            dart = drand48(); // throw the dart
-            if (dart < gamma)
-                scratch[i] = 5; // remove!
-            else
-            {
-                scratch[i] = 4;
-                nsp++;
-            } // preserve and record infection
-            break;
-        case 5:               // removed
-            dart = drand48(); // throw the dart
-            if (dart < epsilon)
-                scratch[i] = 0; // become susceptible
-            else
-                scratch[i] = 5; // stay removed
-            break;
+        switch (cp) {                    // SIR
+            case 0:              // susceptible
+                deg = degree(i); // get the number of neighbors
+                nsn = 0;         // zero the sick neighbor counter
+                for (j = 0; j < deg; j++) {                                    // loop over neighbors
+                    nq = RetrieveQ(q, nbrmod(i, j)); // get the neighbor's status
+                    if ((nq != 0) && (nq != 5))
+                        nsn++; // count the sick neighbors
+                }              // now we know the number of sick neighbors
+                if ((nsn > 0) && (infected(nsn, alpha))) {                   // new infected
+                    scratch[i] = 1; // note the infection
+                    nsp++;          // record the infection
+                } else
+                    scratch[i] = 0; // stayed susceptible
+                break;
+            case 1: // Exposed
+                dart = drand48();
+                if (dart < infec) {                   // exposed transitioned to infected
+                    scratch[i] = 2; // record infected status, moves to Ep
+                    nsp++;          // increment number of sick people
+                } else {                   // stay exposed
+                    scratch[i] = 1; // record exposed status
+                    nsp++;          // increment number of sick people
+                }
+                break;
+            case 2: // Exposed prime
+                dart = drand48();
+                if (dart < infecP) {                   // exposed prime transitioned to infected
+                    scratch[i] = 3; // record infected status, moves to Ep
+                    nsp++;          // increment number of sick people
+                } else if (dart < infecP + cksee) { // Exposed prime transition to long term A
+                    scratch[i] = 4;
+                    nsp++;
+                } else {                   // stay exposed prime
+                    scratch[i] = 2; // record exposed status
+                    nsp++;          // increment number of sick people
+                }
+                break;
+            case 3:               // Infected
+                dart = drand48(); // throw the dart
+                if (dart < gamma)
+                    scratch[i] = 5; // remove!
+                else {
+                    scratch[i] = 3;
+                    nsp++;
+                } // preserve and record infection
+                break;
+            case 4:               // Long term asymptomatic
+                dart = drand48(); // throw the dart
+                if (dart < gamma)
+                    scratch[i] = 5; // remove!
+                else {
+                    scratch[i] = 4;
+                    nsp++;
+                } // preserve and record infection
+                break;
+            case 5:               // removed
+                dart = drand48(); // throw the dart
+                if (dart < epsilon)
+                    scratch[i] = 0; // become susceptible
+                else
+                    scratch[i] = 5; // stay removed
+                break;
         }
     }
     for (i = 0; i < V; i++)
@@ -2823,8 +2503,7 @@ int graph::SEEIARupdate(int &q, double alpha, // pairwise infection
     return (nsp);                  // return the number of sick people
 }
 
-int graph::attack(double *pr)
-{ // probabalistic attack method
+int graph::attack(double *pr) { // probabalistic attack method
 
     if ((M == 0) || (V == 0))
         return (0); // treat empty graphs as totally vulnerable
@@ -2847,8 +2526,7 @@ int graph::attack(double *pr)
         ttl += pr[i]; // create total probability mass
     rv = 0;           // initialize the return value
     fl = 0;           // reset disconnection flag
-    do
-    { // knock out vertices
+    do { // knock out vertices
         i = 0;
         while ((i < V) && (clr[i] != 0))
             i++; // find first living vertex
@@ -2861,8 +2539,7 @@ int graph::attack(double *pr)
         if (fl == 1)
             break; // break out of the do loop
         rv++;      // survived a connectedness check
-        do
-        {
+        do {
             kill = rselect(pr, ttl, V);
         } while (clr[kill] == 1); // find living vertex
         clr[kill] = 1;            // knock out the vertex
@@ -2875,16 +2552,14 @@ int graph::attack(double *pr)
 /************ANT METHODS GO HERE*************************************/
 // Start an ant at each vertex and run it for reps steps and return
 // the number of ands entering each vertex
-void graph::Ant(int reps, int *cnt)
-{
+void graph::Ant(int reps, int *cnt) {
 
     int i;    // loop index variable
     int *psn; // ant positions
 }
 
 // color methods
-void graph::setC2(int vl)
-{ // set colors to vl
+void graph::setC2(int vl) { // set colors to vl
 
     if (clr == 0)
         clr = new int[M]; // if the color buffer doesn't exist, create
@@ -2892,32 +2567,27 @@ void graph::setC2(int vl)
         clr[i] = vl; // set the value
 }
 
-void graph::GDC(int *ord)
-{ // run the greedy coloring algorithm with order ord
+void graph::GDC(int *ord) { // run the greedy coloring algorithm with order ord
 
     int i, j, k, m;
     static int F[50];
 
     setC2(-1); // set current colors to -1
-    for (i = 0; i < V; i++)
-    { // loop over vertices
+    for (i = 0; i < V; i++) { // loop over vertices
         for (j = 0; j < 50; j++)
             F[j] = 0;           // zero use buffer
         k = nbr[ord[i]].size(); // get degree
-        for (j = 0; j < k; j++)
-        { // loop over neighbors
+        for (j = 0; j < k; j++) { // loop over neighbors
             m = clr[nbr[ord[i]].memz(j)];
             if (m >= 0)
                 F[m] = 1;
         }
-        for (j = 0; (j < 50) && (F[j] == 1); j++)
-            ;
+        for (j = 0; (j < 50) && (F[j] == 1); j++);
         clr[i] = j;
     }
 }
 
-int graph::AUC(double *gn, int tg)
-{ // run Austrailian coloring with target tg
+int graph::AUC(double *gn, int tg) { // run Austrailian coloring with target tg
 
     int *used, *aval; // used and available colors
     int i, j, k;      // loop idex variables
@@ -2929,12 +2599,10 @@ int graph::AUC(double *gn, int tg)
         clr = new int[M]; // no color? allocate it
     for (i = 0; i < V; i++)
         clr[i] = -1; // mark as uncolored
-    for (i = 0; i < V; i++)
-    { // loop over vertices
+    for (i = 0; i < V; i++) { // loop over vertices
         for (j = 0; j < tg; j++)
             used[j] = 0; // mark all colors unused
-        for (j = 0; j < nbr[i].size(); j++)
-        {                       // loop over neighbors
+        for (j = 0; j < nbr[i].size(); j++) {                       // loop over neighbors
             v = nbr[i].memz(j); // get the current neighbor
             if (clr[v] >= 0)
                 used[clr[v]] = 1; // make the color used
@@ -2947,7 +2615,7 @@ int graph::AUC(double *gn, int tg)
         // for(j=0;j<V;j++)cout << clr[j] << " ";cout << endl;
         if (k == 0)
             return (i); // stuck!
-        clr[i] = aval[((int)(k * gn[i]))];
+        clr[i] = aval[((int) (k * gn[i]))];
         // cout << i << " " << clr[i] << endl;
     }
     delete[] aval; // return the storage
@@ -2956,8 +2624,7 @@ int graph::AUC(double *gn, int tg)
 }
 
 // genetics
-int graph::FPN(int v, double *ft)
-{ // fitness perprotional neighbor selection
+int graph::FPN(int v, double *ft) { // fitness perprotional neighbor selection
 
     if ((v >= V) || (v < 0))
         return (0);          // return zero for stupid request
@@ -2965,21 +2632,18 @@ int graph::FPN(int v, double *ft)
 }
 
 // I-O
-void graph::write(ostream &aus)
-{ // write the graph
+void graph::write(ostream &aus) { // write the graph
 
     int i;
 
     aus << M << " " << V << " " << E << endl;
-    for (i = 0; i < V; i++)
-    {
+    for (i = 0; i < V; i++) {
         nbr[i].writememb(aus);
     }
     // Need to add code to write qualities and weights
 }
 
-void graph::read(istream &inp)
-{ // read the graph
+void graph::read(istream &inp) { // read the graph
 
     char buf[1000];
     int k;
@@ -3000,16 +2664,14 @@ void graph::read(istream &inp)
         k++;
     E = atoi(buf + k);
     nbr = new set[M];
-    for (int i = 0; i < V; i++)
-    {
+    for (int i = 0; i < V; i++) {
         nbr[i].setempty();    // safety first
         nbr[i].readmemb(inp); // read members
     }
     // Need to add code to read qualities and weights
 }
 
-void graph::readadj(istream &inp, int numV)
-{ // read a python adjacency graph
+void graph::readadj(istream &inp, int numV) { // read a python adjacency graph
 
     char buf[1000];
     int source, target;
@@ -3024,15 +2686,12 @@ void graph::readadj(istream &inp, int numV)
         inp.getline(buf, 999);
     while (buf[0] == '#');
     // read graph
-    for (int i = 0; i < V; i++)
-    {
+    for (int i = 0; i < V; i++) {
         tokenPtr = strtok(buf, " ");
-        if (tokenPtr != NULL)
-        {
+        if (tokenPtr != NULL) {
             source = atoi(tokenPtr);
             tokenPtr = strtok(NULL, " ");
-            while (tokenPtr != NULL)
-            {
+            while (tokenPtr != NULL) {
                 target = atoi(tokenPtr);
                 add(source, target);
                 tokenPtr = strtok(NULL, " ");
@@ -3042,8 +2701,7 @@ void graph::readadj(istream &inp, int numV)
     }
 }
 
-void graph::writeC(ostream &aus)
-{
+void graph::writeC(ostream &aus) {
 
     if (clr == 0)
         return;
@@ -3056,18 +2714,14 @@ void graph::writeC(ostream &aus)
     aus << endl;              // endline
 }
 
-void graph::dotout(ostream &aus)
-{ // write the dot format
+void graph::dotout(ostream &aus) { // write the dot format
 
     int v, e; // vertex and edge loop indices
 
     aus << "graph {" << endl;
-    for (v = 0; v < V; v++)
-    { // loop over the vertices
-        for (e = v + 1; e < V; e++)
-        { // loop over possible neighbors
-            if (edgeP(v, e))
-            { // if this is an edge
+    for (v = 0; v < V; v++) { // loop over the vertices
+        for (e = v + 1; e < V; e++) { // loop over possible neighbors
+            if (edgeP(v, e)) { // if this is an edge
                 aus << v << " -- " << e << ";" << endl;
             }
         }
@@ -3075,19 +2729,16 @@ void graph::dotout(ostream &aus)
     aus << "}" << endl;
 }
 
-void graph::adjout(ostream &aus, char sep)
-{ // write the adjacency list with seperator
+void graph::adjout(ostream &aus, char sep) { // write the adjacency list with seperator
 
     if (V == 0)
         return;
-    for (int i = 0; i < V; i++)
-    { // loop over vertices
+    for (int i = 0; i < V; i++) { // loop over vertices
         nbr[i].writememb(aus, sep);
     }
 }
 
-void graph::writeadj(ostream &aus)
-{ // write the graph as a python adjacency graph
+void graph::writeadj(ostream &aus) { // write the graph as a python adjacency graph
 
     time_t ttime = time(0);
 
@@ -3095,11 +2746,9 @@ void graph::writeadj(ostream &aus)
     aus << "# Output from setu.cpp" << endl;
     aus << "# " << ctime(&ttime);
     aus << "#" << endl;
-    for (int i = 0; i < V; i++)
-    {
+    for (int i = 0; i < V; i++) {
         aus << i;
-        for (int j = 0; j < degree(i); j++)
-        {
+        for (int j = 0; j < degree(i); j++) {
             if (nbr[i].memz(j) > i)
                 aus << " " << nbr[i].memz(j);
         }

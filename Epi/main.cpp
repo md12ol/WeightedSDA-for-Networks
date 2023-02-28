@@ -4,16 +4,10 @@
 #include <cmath>
 #include <iomanip>
 #include <string>
-#include <cstring>
-#include <stdlib.h>
-#include <ctime>
 
 using namespace std;
 
-// #include "filesystem.hpp"
-//  namespace filesystem = ghc::filesystem;
-
-///***********filesystem c++11 version************/
+// This block of code includes the filesystem package (which depends on OS)
 #if defined(__cplusplus) && __cplusplus >= 201703L && defined(__has_include)
 #if __has_include(<filesystem>)
 #define GHC_USE_STD_FS
@@ -28,132 +22,165 @@ namespace filesystem = std::filesystem;
 namespace filesystem = ghc::filesystem;
 #endif
 
-/******************************/
-
+// Include the other files needed
 #include "setu.h"
 #include "stat.h"
 #include "../BitSprayer/Bitsprayer.h"
+#include "Graph.h"
 
 /*************************algorithm controls******************************/
-#define PL 16
-#define NSE 5
+//#define PL 16
+int PL = 16;
+//#define NSE 5
+int NSE = 5;
 #define alpha 0.3
-#define mepl 3 //  Minimum epidemic length
-#define rse 5  //  Re-try short epidemics
-// #define ftl 50              //  Final test length
+#define mepl 3              //  Minimum epidemic length
+#define rse 5               //  Re-try short epidemics
+#define FTL 50              //  Final test length
 #define verbose true
 #define runs 30
-#define mevs 40000
-#define RIs 100
-#define RE ((long)mevs / RIs)
-#define NmC (long)9
-#define EDGB 2 //  Minimum degree for swap
-#define popsize 1000
-#define verts 512
-#define GL 256 // TODO: Change?
-#define RNS 91207819
-#define MAXL (long)pow(verts, 3) //  Size of integer
-#define MNM 4
+#define RNS 9120783
 #define tsize 5
 
-#define omega 0.5
-#define edgeAdd 1
-#define triProb 0.5
+int verts;
+int mevs;
+int popsize;
+int states;
+int MNM;
+//#define verts 128
+//#define mevs 10000
+//#define popsize 10
+//#define states 8
+//#define MNM 7
 
-#define states 12
+#define RIs 100
+//#define RE ((long)mevs / RIs)
+int RE;
+//#define P0UPS 2
+int P0UPS;
+//#define P0INT ((long)mevs/P0UPS)
+int P0INT;
+#define omega 0.5 // DiffChar
+#define ent_thres 1.0 // Necrotic Filter
+bool *dead;
+double worst_fit;
 
-#define ent_thres 1.0
-bool dead[popsize];
-double worst_fit = verts;
+vector<double> edgBnds;
+vector<int> wghtBnds;
+double zeroProb;
+bool diagFill;
+
 
 /**************************Variable dictionary************************/
-int pop[popsize][GL]; //  Population of command strings
-Bitsprayer *bPop[popsize];
-double fit[popsize]; //  Fitness array
-double p0fit[verts]; //  Patient zero fitnesses
-int p0index;
-int dx[popsize];   //  Sorting index
-double PD[PL + 1]; //  Profile dictionary
-double CmD[NmC];   //  Command densities
+Bitsprayer *bPop;
+double *fit; //  Fitness array
+double *p0fit; //  Patient zero fitnesses
+int *dx;   //  Sorting index
+double *PD; //  Profile dictionary
 int fitFun;          //  Profile?
-bool bitRep;
-bool ringG;
-graph iG;
 int patient0; //  patient zero
 
 /****************************Procedures********************************/
 void initalg(const char *pLoc); // initialize the algorithm
-int validloci();                // generate an acceptable large integer
-
-void express(graph &G, const int *cmd); // express a command string
 void initpop();                         // initialize population
 void matingevent();                     // run a mating event
 void report(ostream &aus);              // make a statistical report
 void reportbest(ostream &aus, ostream &difc);
-
 void createReadMe(ostream &aus);
 void cmdLineIntro(ostream &aus);
 void cmdLineRun(int run, ostream &aus);
-double initFitness();
-double fitness(int *cmd);
-double fitness(int idx, Bitsprayer &A);
-double fitnessBit(graph *G);
-void getGene(int idx, double *probs);
+double fitness(Bitsprayer &A, bool finalTest);
+double fitnessBit(Graph &G, bool finalTest);
+int patientZeroUpdate(int mev, ostream &patient0out, bool finalUpdate);
 
 /****************************Main Routine*******************************/
 int main(int argc, char *argv[]) {
     /**
-     * Output Root, Profile Location, Profile Number, Densities
+     * Output Root, Mode, Verts, Mevs, States, Pop, Muts, Profile Number, RCode
      */
+    fstream stat, best, dchar, readme, patient0out; // statistics, best structures
 
-    fitFun = 0; //  0 - Epidemic Length, 1 - Profile Matching
-    bitRep = true; //  True - bitsprayer rep
-    ringG = false;
-
-    /*
-     * Mode 0 -> Epidemic Length (w Densities)
-     * Mode 1 -> Profile Matching (w Densities)
-     * Mode 2 -> Profile Matching (w Bitsprayers)
-     */
-
-    fstream stat, best, dchar, readme, iGOut, patient0out; // statistics, best structures
-    char fn[60];                                           // file name construction buffer
-    char *outLoc = new char[45];
+    char fn[70];                                           // file name construction buffer
+    char *outLoc = new char[60];
+    char *pLoc = new char[50];
     char *outRoot = argv[1];
-    char *pLoc = argv[2];
-    int pNum = stoi(argv[3]);
+    fitFun = atoi(argv[2]); //  0 - Epidemic Length, 1 - Profile Matching
+    verts = atoi(argv[3]);
+    mevs = atoi(argv[4]);
+    states = atoi(argv[5]);
+    popsize = atoi(argv[6]);
+    MNM = atoi(argv[7]);
+
+    int RCode = atoi(argv[9]);
+    edgBnds = {1, 4};
+    wghtBnds = {4, 16};
+    zeroProb = 0.9;
+    P0UPS = 2;
+    diagFill = false;
+    RE = (int) mevs / RIs;
+
+    if (RCode == 1) {
+        edgBnds = {0.5, 5};
+    } else if (RCode == 2) {
+        wghtBnds = {2, 20};
+    } else if (RCode == 3) {
+        zeroProb = 0.85;
+    } else if (RCode == 4) {
+        zeroProb = 0.95;
+    } else if (RCode == 5) {
+        P0UPS = 2;
+    } else if (RCode == 6) {
+        P0UPS = 10;
+    } else if (RCode == 7) {
+        diagFill = true;
+    } else if (RCode == 8) {
+        mevs = 250000;
+    } else if (RCode == 9) {
+        edgBnds = {0.5, 5};
+        diagFill = true;
+    } else if (RCode == 10){
+        wghtBnds = {2, 20};
+        diagFill = true;
+    } else if (RCode == 11){
+        zeroProb = 0.85;
+        diagFill = true;
+    } else if (RCode == 12){
+        zeroProb = 0.95;
+        diagFill = true;
+    } else if (RCode == 13){
+        diagFill = true;
+    }
+
+    bPop = new Bitsprayer[popsize];
+    fit = new double[popsize];
+    p0fit = new double[verts];
+    dx = new int[popsize];
+    dead = new bool[popsize];
+
+    RE = (int) (mevs / RIs);
+    P0INT = (int) (mevs / P0UPS);
+
+    int pNum = -1;
+
     if (fitFun == 0) {
-        if (bitRep) {
-            sprintf(outLoc, "%sEDBit_Output w %dS, %02dP, %dM/",
-                    outRoot, states, popsize, MNM);
-        } else {
-            sprintf(outLoc, "%sED_Output w %dS, %02dP, %dM/",
-                    outRoot, states, popsize, MNM);
-        }
+        sprintf(outLoc, "%sR%d - EDBit%d w %06dG, %dS, %02dP, %dM/",
+                outRoot, RCode, verts, mevs, states, popsize, MNM);
     } else if (fitFun == 1) {
-        if (bitRep) {
-            sprintf(outLoc, "%sPMBit_Output on P%d w %dS, %02dP, %dM/",
-                    outRoot, pNum, states, popsize, MNM);
-        } else {
-            sprintf(outLoc, "%sPM_Output on P%d w %dS, %02dP, %dM/",
-                    outRoot, pNum, states, popsize, MNM);
+        pNum = atoi(argv[8]);
+        if (pNum == 0){
+            PL = 30;
         }
+        PD = new double[PL + 1];
+        sprintf(outLoc, "%sR%d - PMBit%d on P%d w %06dG, %dS, %02dP, %dM/",
+                outRoot, RCode, verts, pNum, mevs, states, popsize, MNM);
     } else {
         cout << "ERROR! No outLoc for this fitFun!" << endl;
     }
+
     filesystem::create_directory(outLoc);
 
-    srand((unsigned) time(0)); // This is overwritten in initialg() method.
-    patient0 = rand() % verts;
+    sprintf(pLoc, "./Profiles/Profile%d.dat", pNum);
     initalg(pLoc);
-    if (!bitRep) { // Densities
-        // change offset to 3 for ED and 4 for profile
-        int offset = 4;
-        for (int cmd = 0; cmd < NmC; cmd++) {
-            CmD[cmd] = strtod(argv[cmd + offset], nullptr);
-        }
-    }
-
     sprintf(fn, "%sbest.lint", outLoc);
     best.open(fn, ios::out);
     sprintf(fn, "%sdifc.dat", outLoc);
@@ -164,127 +191,116 @@ int main(int argc, char *argv[]) {
     readme.close();
     sprintf(fn, "%spatient0.dat", outLoc);
     patient0out.open(fn, ios::out);
-    if (!bitRep){
-        if (!ringG) {
-            sprintf(fn, "%sinitGraph.dat", outLoc);
-            iGOut.open(fn, ios::out);
-            double fit = initFitness();
-            iGOut << "Initial Graph Fitness: " << fit << endl;
-            iG.write(iGOut);
-            iGOut.close();
-        } else if (ringG) {
-            sprintf(fn, "%sinitGraph.dat", outLoc);
-            iGOut.open(fn, ios::out);
-            iG.RNGnm(verts, 2);
-            double fit = initFitness();
-            iGOut << "Initial Graph Fitness: " << fit << endl;
-            iG.write(iGOut);
-            iGOut.close();
-        }
-    }
+    patient0out << "Patient Zero Update Info" << endl;
+
+//    char* thing = new char[50];
+//    sprintf(thing, "./jamesGraph_new.dat");
+//    fstream inp;
+//    inp.open(thing, ios::in);
+//    int size = verts * (verts - 1) / 2;
+//    vector<int> weights;
+//    weights.reserve(size);
+//    char buf[20];
+//
+//    for (int i = 0; i < size; i++) {
+//        inp.getline(buf, 19);
+//        weights.push_back(atoi(buf));
+//    }
+//
+//    inp.close();
+//    delete[] thing;
+//
+//    Graph G(verts);
+//    G.fill(weights);
+//    double sum = 0.0;
+//    vector<int> prof;
+//    double bb = 0.0;
+//    for (int i = 0; i < 1000; ++i) {
+//        prof = G.SIR(alpha,0);
+//        sum += prof.size()-1;
+//        if (prof.size()>bb){
+//            bb = prof.size()-1;
+//        }
+//        for(int i: prof){
+//            cout<<i<<" ";
+//        }
+//        cout<<endl;
+//    }
+//    cout<<"Average: " << (double)(sum/1000)<<endl;
+//    cout<<"Best: " << (double)(bb)<<endl;
 
     if (verbose) {
         cmdLineIntro(cout);
-    }
-
-    if (!verbose) {
+    } else {
         cout << "Started" << endl;
     }
-    for (int run = 0; run < runs; run++) {
-//        srand((unsigned) time(0));
-        patient0 = (int)lrand48() % verts; // setting initial patient zero
-        p0index = 0;
-        sprintf(fn, "%srun%02d.dat", outLoc, run); // File name
+
+    for (int run = 0; run < runs; ++run) {
+        patient0 = (int) lrand48() % verts;
+        sprintf(fn, "%srun%02d.dat", outLoc, run + 1); // File name
         stat.open(fn, ios::out);
         if (verbose) cmdLineRun(run, cout);
         initpop();
         stat << left << setw(4) << 0;
         report(stat); // report the statistics of the initial population
-        int mateInterval = mevs / 2;
-        patient0out << "########################" << endl;
-        patient0out << "Run # " << run << endl;
-        patient0out << "########################" << endl;
+        patient0out << "Run # " << run + 1 << endl;
+        patientZeroUpdate(0, patient0out, false);
         for (int mev = 0; mev < mevs; mev++) { // do mating events
-            if (mev % mateInterval == 0) {
-                for (int i = 0; i < verts; i++) {
-                    patient0 = i;
-                    double sumTotal = 0.0;
-                    for (int j = 0; j < popsize; j++) {
-                        sumTotal += fitness(pop[j]);
-                    }
-                    p0fit[i] = sumTotal / popsize;
-                }
-                for (int k = 1; k < verts; k++) {
-                    if (fitFun == 0) {
-                        if (p0fit[k] > p0fit[p0index]) {
-                            p0index = k;
-                        }
-                    } else {
-                        if (p0fit[k] < p0fit[p0index]) {
-                            p0index = k;
-                        }
-                    }
-                }
-                patient0 = p0index; // best performing patient zero
-                patient0out << "p0: " << patient0;
-                patient0out << "    Mating Event #: " << mev << endl;
-            }
             matingevent(); // run a mating event
+            if (RCode == 5 || RCode == 6 || RCode == 13) {
+                if (mev + 1 == mevs){
+                    patientZeroUpdate(mev, patient0out, true);
+                } else if ((mev + 1) % P0INT == 0) {
+                    patientZeroUpdate(mev, patient0out, false);
+                }
+            } else if ((mev + 1) < P0UPS * P0INT && (mev + 1) % P0INT == 0) {
+                patientZeroUpdate(mev, patient0out, false);
+            }
             if ((mev + 1) % RE == 0) { // Time for a report?
                 if (verbose) {
-                    cout << left << setw(5) << run;
+                    cout << left << setw(5) << run + 1;
                     cout << left << setw(4) << (mev + 1) / RE;
                 }
                 stat << left << setw(4) << (mev + 1) / RE;
                 report(stat); // report statistics
             }
         }
+        patient0out << endl;
         stat.close();
         reportbest(best, dchar);
-        cout << "Done run " << run << " of " << runs - 1 << endl;
+        cout << "Done run " << run + 1 << " of " << runs << endl;
     }
 
     patient0out.close();
     best.close();
     dchar.close();
     delete[] outLoc;
+    delete[] pLoc;
+    delete[] bPop;
+    delete[] fit;
+    delete[] p0fit;
+    delete[] dx;
+    delete[] dead;
+    delete[] PD;
     return (0); // keep the system happy
 }
 
 void createReadMe(ostream &aus) {
     aus << "This file contains the info about the files in this folder." << endl;
     aus << "Graph Evolution Tool." << endl;
-    if (!bitRep){
-        aus << "Initial Graph: ";
-        if (ringG) {
-            aus << "Weighted Ring with m = 2" << endl;
-        } else {
-            aus << "Weighted Power Law Cluster Graph" << endl;
-        }
-    }
     if (fitFun == 0) {
         aus << "Fitness Function: Epidemic Length" << endl;
     } else if (fitFun == 1) {
         aus << "Fitness Function: Profile Matching" << endl;
         aus << "Profile: ";
-        for (double i: PD) {
-            aus << i << " ";
+        for (int i = 0; i < PL + 1; i++) {
+            aus << PD[i] << " ";
         }
         aus << endl;
     } else {
         cout << "ERROR! No read me for this fitFun setting!" << endl;
     }
-    if (!bitRep) {
-        aus << "Representation: THADS-N with Operation Densities" << endl;
-        aus << "Densities: ";
-        for (double i: CmD) {
-            aus << i << " ";
-        }
-        aus << endl;
-        aus << "Gene length: " << GL << endl;
-    } else {
-        aus << "Representation: Bitsprayer" << endl;
-    }
+    aus << "Representation: Bitsprayer" << endl;
     aus << endl;
     aus << "The parameter settings are as follows: " << endl;
     aus << "Number of sample epidemics: " << NSE << endl;
@@ -293,23 +309,13 @@ void createReadMe(ostream &aus) {
     aus << "Re-tries for short epidemics: " << rse << endl;
     aus << "Runs: " << runs << endl;
     aus << "Mating events: " << mevs << endl;
-    if (!bitRep) {
-        aus << "Minimum degree for swap: " << EDGB << endl;
-    }
     aus << "Population size: " << popsize << endl;
     aus << "Number of vertices: " << verts << endl;
     aus << "Maximum number of mutations: " << MNM << endl;
     aus << "Tournament size: " << tsize << endl;
-    if (bitRep) {
-        aus << "Number of States: " << states << endl;
-        aus << "Entropy Threshold for Necrotic Filter: " << ent_thres << endl;
-    }
+    aus << "Number of States: " << states << endl;
+    aus << "Entropy Threshold for Necrotic Filter: " << ent_thres << endl;
     aus << "Decay strength for diffusion characters: " << omega << endl;
-    if (!ringG) {
-        aus << "Omega value: " << omega << endl;
-        aus << "Edges added at each step: " << edgeAdd << endl;
-        aus << "Triangle creation probability: " << triProb << endl;
-    }
     aus << endl;
     aus << "The file descriptions are as follows: " << endl;
     aus << "best.lint -> the best fitness and it's associated data for each run";
@@ -318,51 +324,29 @@ void createReadMe(ostream &aus) {
     aus << endl;
     aus << "run##.dat -> population statistics for each run" << endl;
     aus << "patient0.dat -> record of patient zeros" << endl;
-    if (!ringG) {
-        aus << "initGraph.dat -> the initial power law clustering graph" << endl;
-    }
 }
 
 void cmdLineIntro(ostream &aus) {
     aus << "Graph Evolution Tool." << endl;
-    if (!bitRep){
-        aus << "Initial Graph: ";
-        if (ringG) {
-            aus << "Weighted Ring with m = 2" << endl;
-        } else {
-            aus << "Weighted Power Law Cluster Graph" << endl;
-        }
-    }
     if (fitFun == 0) {
         aus << "Fitness Function: Epidemic Length" << endl;
     } else if (fitFun == 1) {
         aus << "Fitness Function: Profile Matching" << endl;
         aus << "Profile: ";
-        for (double i: PD) {
-            aus << i << " ";
+        for (int i = 0; i < PL + 1; i++) {
+            aus << PD[i] << " ";
         }
         aus << endl;
     } else {
         cout << "ERROR! No read me for this fitFun setting!" << endl;
     }
-    if (!bitRep) {
-        aus << "Representation: THADS-N with Operation Densities" << endl;
-        aus << "Densities: ";
-        for (double i: CmD) {
-            aus << i << " ";
-        }
-        aus << endl;
-        aus << "Gene length: " << GL << endl;
-    } else {
-        aus << "Representation: Bitsprayer" << endl;
-    }
+    aus << "Representation: Bitsprayer" << endl;
     aus << "Check readme.dat for more information about parameters/output.";
     aus << endl;
 }
 
 void cmdLineRun(int run, ostream &aus) {
-    aus << endl
-        << "Beginning Run " << run << " of " << runs - 1 << endl;
+    aus << endl << "Beginning Run " << run + 1 << " of " << runs << endl;
     aus << left << setw(5) << "Run";
     aus << left << setw(4) << "RI";
     aus << left << setw(10) << "Mean";
@@ -370,19 +354,15 @@ void cmdLineRun(int run, ostream &aus) {
     aus << left << setw(10) << "SD";
     aus << left << setw(8) << "Best";
     aus << endl;
-    aus << left << setw(5) << run;
+    aus << left << setw(5) << run+1;
     aus << left << setw(4) << "0";
 }
 
-void initalg(const char *pLoc) {                 // initialize the algorithm
+void initalg(const char *pLoc) { // initialize the algorithm
     fstream inp;  // input file
     char buf[20]; // input buffer
 
     srand48(RNS); // read the random number seed
-    if (!ringG) {
-        iG.create(verts);
-        iG.PCG(verts, edgeAdd, triProb);
-    }
     if (fitFun == 1) {
         inp.open(pLoc, ios::in); // open input file
         for (int i = 0; i < PL; i++) {
@@ -395,129 +375,98 @@ void initalg(const char *pLoc) {                 // initialize the algorithm
         }
         inp.close();
     }
-    if (bitRep) {
-        for (int i = 0; i < popsize; i++) {
-            bPop[i] = new Bitsprayer(states);
+    for (int i = 0; i < popsize; ++i) {
+        bPop[i] = *new Bitsprayer(states, zeroProb);
+    }
+}
+
+int patientZeroUpdate(int mev, ostream &patient0out, bool finalUpdate) {
+    if (finalUpdate) {
+        double bestFit = (fitFun == 0 ? 0 : MAXFLOAT);
+        int bestP0 = -1;
+        int bestBit = -1;
+        double oneFit;
+        int origP0 = patient0;
+        for (int i = 0; i < verts; i++) { // For every potential patient zero
+            patient0 = i;
+            for (int j = 0; j < popsize; j++) {
+                if (patient0 == origP0){
+                    oneFit = fit[j];
+                } else {
+                    oneFit = fitness(bPop[j], false);
+                }
+                if (fitFun == 0 && oneFit > bestFit) {
+                    bestP0 = i;
+                    bestBit = j;
+                    bestFit = oneFit;
+                } else if (fitFun == 1 && oneFit < bestFit) {
+                    bestP0 = i;
+                    bestBit = j;
+                    bestFit = oneFit;
+                }
+            }
         }
-    }
-}
-
-// This routine generates valid loci for the expression routine
-int validloci() {                // generate an acceptable large integer
-    int cmd;     // command type generated
-    double dart; // Random command
-
-    dart = drand48() - CmD[0]; // throw the dart
-    cmd = 0;                   // initialize the position on the dartboard
-    while ((dart > 0) && (cmd < NmC - 1)) {
-        dart -= CmD[++cmd]; // walk the board
-    }
-    cmd += (int) (NmC * (lrand48() % MAXL)); // add in the large integer part
-
-    return (cmd); // return the generated command
-}
-
-// This is expression of a large integer represenation
-void express(graph &G, const int *cmd) {                // express a command string
-    int a, b, c; // decoded values
-    int cdv;     // command value
-    int block;   // integer carving block
-
-    if (ringG) {
-        G.RNGnm(verts, 2); //  Initial graph
+        patient0 = bestP0;
+        fit[bestBit] = bestFit;
+        for (int b = 0; b < popsize; ++b) {
+            if (b != bestBit){
+                fit[b] = fitness(bPop[b], false);
+            }
+        }
     } else {
-        G.copy(iG);
-    }
-
-    for (int i = 0; i < GL; i++) {  // loop over the commands (genetic loci)
-        block = cmd[i];             // get integer
-        cdv = (int) (block % NmC);  // slice of the command
-        block /= NmC;               // clear command information from block
-        switch (cdv) {       // What command is it?
-            case 0: // Toggle
-                a = block % verts;
-                b = (block / verts) % verts; // get vertex numbers
-                c = (block / verts / verts) % 2;
-                G.toggle(a, b, c); // toggle edge {a,b}
-                break;
-            case 1: // Hop
-                // get vertex numbers
-                a = block % verts;
-                b = (block / verts) % verts;
-                c = (block / verts / verts) % verts;
-                G.hop(a, b, c);
-                break;
-            case 2: // Add
-                a = block % verts;
-                b = (block / verts) % verts; // get vertex numbers
-                //                 c = (block / verts / verts) % 2;
-                G.add(a, b);                 // add edge {a,b}
-                break;
-            case 3: // Delete
-                a = block % verts;
-                b = (block / verts) % verts; // get vertex numbers
-                //                 c = (block / verts / verts) % 2;
-                G.del(a, b);                 // delete edge a,b
-                break;
-            case 4: // Swap
-                a = block % (verts * 10);
-                b = (block / (verts * 10)) % (verts * 10); // get vertex numbers
-                G.edgeswap(a, b, EDGB);
-                break;
-            case 5: // Local Toggle
-                // get vertex numbers
-                a = block % verts;
-                b = (block / verts) % verts;
-                c = (block / verts / verts) % verts;
-                G.loggle(a, b, c);
-                break;
-            case 6: // Local Add
-                // get vertex numbers
-                a = block % verts;
-                b = (block / verts) % verts;
-                c = (block / verts / verts) % verts;
-                G.ladd(a, b, c);
-                break;
-            case 7: // Local Del
-                // get vertex numbers
-                a = block % verts;
-                b = (block / verts) % verts;
-                c = (block / verts / verts) % verts;
-                G.ldel(a, b, c);
-                break;
-            case 8: // Null - Do nothing
-                break;
-            default:
-                cout << "ERROR: default of switch";
-                break;
+        for (int i = 0; i < verts; i++) { // For every potential patient zero
+            patient0 = i;
+            double sumTotal = 0.0;
+            for (int j = 0; j < popsize; j++) {
+                sumTotal += fitness(bPop[j], false);
+            }
+            p0fit[i] = sumTotal / popsize;
+        }
+        patient0 = 0;
+        for (int k = 0; k < verts; k++) {
+            if (fitFun == 0) {
+                if (p0fit[k] > p0fit[patient0]) {
+                    patient0 = k;
+                }
+            } else {
+                if (p0fit[k] < p0fit[patient0]) {
+                    patient0 = k;
+                }
+            }
+        }
+        for (int b = 0; b < popsize; ++b) {
+            fit[b] = fitness(bPop[b], false);
         }
     }
+
+    patient0out << "The best p0 is " << patient0;
+    patient0out << " at mating event " << mev + 1 << endl;
+    return patient0;
 }
 
-int bitsToInt(const int bs[], int cnt) {
-    int val = bs[0];
-    for (int e = 1; e < cnt; e++) {
-        val += (int) pow(bs[e], e);
-    }
-    return val;
-}
-
-// TODO: Update
-bool necroticFilter(Bitsprayer &A) {
+bool necroticFilter(Bitsprayer &A) { // True means dead.
     int size = verts * (verts - 1) / 2;
     vector<int> vals;
     vals.reserve(size);
 
     vals = A.getBitsVec(size);
 
-    int count = 0;
-    for (int v: vals){
-        if (v == 0){
-            count++;
+    int totWeight = 0;
+    int totEdges = 0;
+    for (int v: vals) {
+        totWeight += v;
+        if (v > 0) {
+            totEdges++;
         }
     }
-
-    return count > verts;
+//    return false;
+    if (totEdges < edgBnds[0] * verts || totEdges > edgBnds[1] * verts) {
+        return true;
+    }
+    if (totWeight < wghtBnds[0] * verts || totWeight > wghtBnds[1] * verts) {
+        return true;
+    }
+    return false;
 
 //    double En = 0.0;
 //    int binSize = 10;
@@ -542,169 +491,55 @@ bool necroticFilter(Bitsprayer &A) {
 //    return En < ent_thres;
 }
 
-double initFitness() {
-    int max, len, ttl;       // maximum, length, and total removed
+
+double fitnessBit(Graph &G, bool finalTest) { // compute the fitness
+    int len;       // maximum, length, and total removed
     int cnt;                 // counter for tries
-    double prof[verts + 10]; // profile variable
-    double trials[NSE];      // stores squared error for each trial
-    double delta;            // difference between profile and trial
-    double accu = 0.0;       // accumulator
-    int en;
-    if (fitFun == 0) {
-        for (en = 0; en < NSE; en++) {
-            cnt = 0;
-            do {
-                iG.SIR(patient0, max, len, ttl, alpha);
-                cnt++;
-            } while (len < mepl && cnt < rse);
-            trials[en] = len;
-        }
-        for (double trial: trials) { // loop over trials
-            accu += trial;
-        }
-        accu = accu / NSE;
-    } else {
-        for (en = 0; en < NSE; en++) { // loop over epidemics
-            cnt = 0;
-            do {
-                iG.SIRProfile(patient0, max, len, ttl, alpha, prof);
-                // iG.SIRRSProfile(patient0, max, len, ttl, alpha, prof);
-                cnt++;
-            } while (len < mepl && cnt < rse);
-            trials[en] = 0; // zero the current squared error
-            if (len < PL + 1) {
-                len = PL + 1; // find length of epi/prof (longer)
-            }
-            // small window
-            len = PL + 1;
-            // comment out above for full error
-            for (int i = 0; i < len; i++) { // loop over time periods
-                if (i < PL + 1) {
-                    delta = prof[i] - PD[i];
-                    trials[en] += delta * delta;
-                } else {
-                    delta = prof[i];
-                    trials[en] += delta * delta;
-                }
-            }
-            trials[en] = sqrt(trials[en] / len); // convert to RMS error
-        }
-
-        for (double trial: trials) {
-            accu += trial;
-        }
-        accu = accu / NSE;
-    }
-    return accu; // return the fitness value
-}
-
-double fitness(int *cmd) {                            // compute the epidemic length fitness
-    graph G(verts);          // scratch graph
-    int max, len, ttl;       // maximum, length, and total removed
-    int cnt;                 // counter for tries
-    double prof[verts + 10]; // profile variable
-    double trials[NSE];      // stores squared error for each trial
-    int en;                  // epidemic number
-    double delta;            // difference between profile and trial
-    double accu = 0.0;       // accumulator
-    express(G, cmd);         // create the graph
-
-    if (fitFun == 0) {
-        for (en = 0; en < NSE; en++) {
-            cnt = 0;
-            do {
-                G.SIR(patient0, max, len, ttl, alpha);
-                cnt++;
-            } while (len < mepl && cnt < rse);
-            trials[en] = len;
-        }
-        for (double trial: trials) { // loop over trials
-            accu += trial;
-        }
-        accu = accu / NSE;
-    } else {
-        for (en = 0; en < NSE; en++) { // loop over epidemics
-            cnt = 0;
-            do {
-                G.SIRProfile(patient0, max, len, ttl, alpha, prof);
-//                G.SIRRSProfile(patient0, max, len, ttl, alpha, prof);
-                cnt++;
-            } while (len < mepl && cnt < rse);
-            trials[en] = 0; // zero the current squared error
-            if (len < PL + 1) {
-                len = PL + 1; // find length of epi/prof (longer)
-            }
-            // small window
-            len = PL + 1;
-            // comment out above for full error
-            for (int i = 0; i < len; i++) { // loop over time periods
-                if (i <= PL + 1) {
-                    delta = prof[i] - PD[i];
-                    trials[en] += delta * delta;
-                } else {
-                    delta = prof[i];
-                    trials[en] += delta * delta;
-                }
-            }
-            trials[en] = sqrt(trials[en] / len); // convert to RMS error
-        }
-
-        for (double trial: trials) {
-            accu += trial;
-        }
-        accu = accu / NSE;
-    }
-    // delete[] prof;
-    return accu; // return the fitness value
-}
-
-double fitnessBit(graph &G) {                            // compute the epidemic length fitness
-    int max, len, ttl;       // maximum, length, and total removed
-    int cnt;                 // counter for tries
-    double prof[verts + 10]; // profile variable
-    double trials[NSE];      // stores squared error for each trial
+    vector<int> profile; // profile variable
+    double trials[(finalTest ? FTL : NSE)];      // stores squared error for each trial
     int en;                  // epidemic number
     double delta;            // difference between profile and trial
     double accu = 0.0;       // accumulator
 
     if (fitFun == 0) {
-        for (en = 0; en < NSE; en++) {
+        int tests = (finalTest ? FTL : NSE);
+//        if (tests>NSE){
+//            cout<<tests<<" Epidemics Performed"<<endl;
+//        }
+        for (en = 0; en < tests; en++) {
             cnt = 0;
             do {
-                G.SIR(patient0, max, len, ttl, alpha);
+                profile = G.SIR(alpha, patient0);
+//                for (int p : profile){
+//                    cout<<p<<" ";
+//                }
+//                cout<<endl;
                 cnt++;
-            } while (len < mepl && cnt < rse);
-            trials[en] = len;
+            } while (profile.size() - 1 < mepl && cnt < rse);
+            trials[en] = (double) profile.size() - 1;
         }
         for (double trial: trials) { // loop over trials
             accu += trial;
         }
-        accu = accu / NSE;
+        accu = accu / tests;
     } else if (fitFun == 1) {
-        for (en = 0; en < NSE; en++) { // loop over epidemics
+        for (en = 0; en < (finalTest ? FTL : NSE); en++) { // loop over epidemics
             cnt = 0;
             do {
-                G.SIRProfile(patient0, max, len, ttl, alpha, prof);
-//                G.SIRRSProfile(patient0, max, len, ttl, alpha, prof);
+                profile = G.SIR(alpha, patient0);
                 cnt++;
-            } while (len < mepl && cnt < rse);
+            } while (profile.size() - 1 < mepl && cnt < rse);
             trials[en] = 0; // zero the current squared error
-            if (len < PL + 1) {
-                len = PL + 1; // find length of epi/prof (longer)
-            }
-            // small window
-            len = PL + 1;
-            // comment out above for full error
-            for (int i = 0; i < len; i++) { // loop over time periods
-                if (i <= PL + 1) {
-                    delta = prof[i] - PD[i];
-                    trials[en] += delta * delta;
+            len = (int) profile.size() - 1;
+            for (int i = 0; i < PL + 1; i++) { // loop over time periods
+                if (i < len) {
+                    delta = profile[i] - PD[i];
                 } else {
-                    delta = prof[i];
-                    trials[en] += delta * delta;
+                    delta = PD[i];
                 }
+                trials[en] += delta * delta;
             }
-            trials[en] = sqrt(trials[en] / len); // convert to RMS error
+            trials[en] = sqrt(trials[en] / (PL + 1)); // convert to RMS error
         }
 
         for (double trial: trials) {
@@ -712,67 +547,45 @@ double fitnessBit(graph &G) {                            // compute the epidemic
         }
         accu = accu / NSE;
     }
-    // delete[] prof;
     return accu; // return the fitness value
 }
 
-double fitness(int idx, Bitsprayer &A) {
+double fitness(Bitsprayer &A, bool finalTest) {
     int size = verts * (verts - 1) / 2;
     vector<int> vals;
     vals.reserve(size);
 
-//    if (necroticFilter()) {
-//        dead[idx] = true;
-//        return worst_fit;
-//    }
-
     vals = A.getBitsVec(size);
-//    for (int v: vals){
-//        cout<<v<<" ";
+//    A.printBitsVec(size, cout);
+    //    for (int i: vals) {
+//        cout << i << " ";
 //    }
-//    cout<<endl;
+//    cout << endl;
+    Graph G(verts);
+    G.fill(vals, diagFill);
+//    G.print(cout);
+//    G.print(cout);
 
-    graph G(verts);
-    G.empty(verts);
-    int vIdx = 0;
-    for (int row = 0; row < verts; ++row) {
-        for (int col = row + 1; col < verts; ++col) {
-            G.forceAdd(row, col, vals.at(vIdx++));
-        }
-    }
-
-    if (vIdx > size) {
-        cout << "ERROR! Too many values getting taken from vals vector in fitness method!" << endl;
-    }
-
-    double fi = fitnessBit(G);
+    double fi = fitnessBit(G, finalTest);
     return fi;
 }
 
 void initpop() { // initialize population
-    if (!bitRep) {
-        for (int i = 0; i < popsize; i++) { // loop over the population
-            for (int j = 0; j < GL; j++) {
-                pop[i][j] = validloci(); // fill in the loci
-            }
-            fit[i] = fitness(pop[i]); // compute its fitness
-            dx[i] = i;                // refresh the sorting index
-        }
-    } else {
-        for (int i = 0; i < popsize; i++) {
-            dead[i] = false;
-            bPop[i]->create(states);
-            do {
-                bPop[i]->randomize();
-            } while (necroticFilter(*bPop[i]));
-//            bPop[i]->print();
-            fit[i] = fitness(i, *bPop[i]);
-            dx[i] = i;
-        }
+//    int size = verts * (verts - 1) / 2;
+    for (int i = 0; i < popsize; i++) {
+        dead[i] = false;
+        do {
+            bPop[i].randomize();
+        } while (necroticFilter(bPop[i]));
+//        bPop[i]->printBitsVec(size, cout);
+        fit[i] = fitness(bPop[i], false);
+//        cout<<i<<endl;
+//        cout<<"Generated"<<endl;
+        dx[i] = i;
     }
 }
 
-void matingevent() {                 // run a mating event
+void matingevent() { // run a mating event
     int rp, sw;   // loop index, random position, swap variable
     int cp1, cp2; // crossover points
 
@@ -783,239 +596,172 @@ void matingevent() {                 // run a mating event
         Tselect(fit, dx, tsize, popsize);
     }
 
-    if (!bitRep) {
-        // selection and crossover
-        cp1 = (int) lrand48() % GL;
-        cp2 = (int) lrand48() % GL;
-        if (cp1 > cp2) {
-            sw = cp1;
-            cp1 = cp2;
-            cp2 = sw;
-        }
-        for (int i = 0; i < cp1; i++) {
-            pop[dx[0]][i] = pop[dx[tsize - 2]][i];
-            pop[dx[1]][i] = pop[dx[tsize - 1]][i];
-        }
-        for (int i = cp1; i < cp2; i++) {
-            pop[dx[0]][i] = pop[dx[tsize - 1]][i];
-            pop[dx[1]][i] = pop[dx[tsize - 2]][i];
-        }
-        for (int i = cp2; i < GL; i++) {
-            pop[dx[0]][i] = pop[dx[tsize - 2]][i];
-            pop[dx[1]][i] = pop[dx[tsize - 1]][i];
-        }
-
-        // mutation
-        rp = (int) lrand48() % MNM + 1;
-        for (int i = 0; i < rp; i++) {
-            pop[dx[0]][lrand48() % GL] = validloci();
-        }
-        rp = (int) lrand48() % MNM + 1;
-        for (int i = 0; i < rp; i++) {
-            pop[dx[1]][lrand48() % GL] = validloci();
-        }
-
-        // update fitness
-        fit[dx[0]] = fitness(pop[dx[0]]);
-        fit[dx[1]] = fitness(pop[dx[1]]);
-
-        // Skeptical tournament selection
-        //    if (fitFun == 0) {
-        //      fit[dx[tsize - 1]] = fitness(pop[dx[tsize - 1]]);
-        //      fit[dx[tsize - 2]] = fitness(pop[dx[tsize - 2]]);
-        //    }
+    bPop[dx[0]].copy(bPop[dx[tsize - 2]]);
+    bPop[dx[1]].copy(bPop[dx[tsize - 1]]);
+    bPop[dx[0]].twoPtCrossover(bPop[dx[1]]);
+    rp = (int) lrand48() % MNM + 1;
+    bPop[dx[0]].mutate(rp);
+    rp = (int) lrand48() % MNM + 1;
+    bPop[dx[1]].mutate(rp);
+    // reset dead SDAs
+    dead[dx[0]] = false;
+    dead[dx[1]] = false;
+    if (necroticFilter(bPop[dx[0]]) == 1) {
+        dead[dx[0]] = true;
+        fit[dx[0]] = worst_fit;
     } else {
-        bPop[dx[0]]->copy(*bPop[dx[tsize - 2]]);
-        bPop[dx[1]]->copy(*bPop[dx[tsize - 1]]);
-        bPop[dx[0]]->twoPtCrossover(*bPop[dx[1]]);
-        rp = (int) lrand48() % MNM + 1;
-        bPop[dx[0]]->mutate(rp);
-        rp = (int) lrand48() % MNM + 1;
-        bPop[dx[1]]->mutate(rp);
-        // reset dead SDAs
-        dead[dx[0]] = false;
-        dead[dx[1]] = false;
-        fit[dx[0]] = fitness(dx[0], *bPop[dx[0]]);
-        fit[dx[1]] = fitness(dx[1], *bPop[dx[1]]);
+        fit[dx[0]] = fitness(bPop[dx[0]], false);
+    }
+    if (necroticFilter(bPop[dx[1]]) == 1) {
+        dead[dx[1]] = true;
+        fit[dx[1]] = worst_fit;
+    } else {
+        fit[dx[1]] = fitness(bPop[dx[1]], false);
     }
 }
 
 void report(ostream &aus) { // make a statistical report
     dset D;
     int deaths = 0;
-    if (bitRep) {
-        for (bool i: dead) {
-            if (i) {
-                deaths++;
-            }
+
+    for (int i = 0; i < popsize; ++i) {
+        if (dead[i]) {
+            deaths++;
         }
-        double good_fit[popsize - deaths];
-        for (double &i: good_fit) {
-            i = 0.0;
+    }
+    double good_fit[popsize - deaths];
+    for (double &i: good_fit) {
+        i = 0.0;
+    }
+    int cnt = 0;
+    for (int i = 0; i < popsize; i++) {
+        if (!dead[i]) {
+            good_fit[cnt++] = fit[i];
         }
-        int cnt = 0;
-        for (int i = 0; i < popsize; i++) {
-            if (!dead[i]) {
-                good_fit[cnt++] = fit[i];
-            }
-        }
-        D.add(good_fit, popsize - deaths);
-        if (fitFun == 0){
-            if (D.Rmax() != worst_fit) {
-                for (int i = 0; i < popsize; i++) {
-                    if (dead[i]) { // update max
-                        fit[i] = D.Rmax();
-                    }
+    }
+    D.add(good_fit, popsize - deaths);
+    if (fitFun == 0) {
+        if (D.Rmin() != worst_fit) {
+            worst_fit = D.Rmin();
+            for (int i = 0; i < popsize; i++) {
+                if (dead[i]) {
+                    fit[i] = worst_fit;
                 }
-                worst_fit = D.Rmax();
-            }
-        } else if (fitFun == 1){
-            if (D.Rmin() != worst_fit) {
-                for (int i = 0; i < popsize; i++) {
-                    if (dead[i]) { // update max
-                        fit[i] = D.Rmin();
-                    }
-                }
-                worst_fit = D.Rmin();
             }
         }
-    } else {
-        D.add(fit, popsize); // load fitness
+    } else if (fitFun == 1) {
+        if (D.Rmax() != worst_fit) {
+            worst_fit = D.Rmax();
+            for (int i = 0; i < popsize; i++) {
+                if (dead[i]) { // update max
+                    fit[i] = worst_fit;
+                }
+            }
+        }
     }
 
-    // print report
-    if (!bitRep) {
-        aus << left << setw(10) << D.Rmu();
-        aus << left << setw(12) << D.RCI95();
-        aus << left << setw(10) << D.Rsg();
-        if (fitFun == 0){
-            aus << left << setw(8) << D.Rmax() << endl;
-        } else if (fitFun == 1){
-            aus << left << setw(8) << D.Rmin() << endl;
-        }
-        if (verbose) {
-            cout << left << setw(10) << D.Rmu();
-            cout << left << setw(12) << D.RCI95();
-            cout << left << setw(10) << D.Rsg();
-            if (fitFun == 0) {
-                cout << left << setw(8) << D.Rmax() << endl;
-            } else if (fitFun == 1) {
-                cout << left << setw(8) << D.Rmin() << endl;
-            }
-        }
-    } else {
-        aus << left << setw(10) << D.Rmu();
-        aus << left << setw(12) << D.RCI95();
-        aus << left << setw(10) << D.Rsg();
+    aus << left << setw(10) << D.Rmu();
+    aus << left << setw(12) << D.RCI95();
+    aus << left << setw(10) << D.Rsg();
+    if (fitFun == 0) {
+        aus << left << setw(8) << D.Rmax() << "\t";
+    } else if (fitFun == 1) {
+        aus << left << setw(8) << D.Rmin() << "\t";
+    }
+    aus << "Dead: " << deaths << endl;
+    if (verbose) {
+        cout << left << setw(10) << D.Rmu();
+        cout << left << setw(12) << D.RCI95();
+        cout << left << setw(10) << D.Rsg();
         if (fitFun == 0) {
-            aus << left << setw(8) << D.Rmax() << "\t";
+            cout << left << setw(8) << D.Rmax() << "\t";
         } else if (fitFun == 1) {
-            aus << left << setw(8) << D.Rmin() << "\t";
+            cout << left << setw(8) << D.Rmin() << "\t";
         }
-        aus << "Dead: " << deaths << endl;
-        if (verbose) {
-            cout << left << setw(10) << D.Rmu();
-            cout << left << setw(12) << D.RCI95();
-            cout << left << setw(10) << D.Rsg();
-            if (fitFun == 0) {
-                cout << left << setw(8) << D.Rmax() << "\t";
-            } else if (fitFun == 1) {
-                cout << left << setw(8) << D.Rmin() << "\t";
-            }
-            cout << "Dead: " << deaths << endl;
-        }
+        cout << "Dead: " << deaths << endl;
     }
 }
 
-void reportbest(ostream &aus, ostream &difc) {                   // report the best graph
+void reportbest(ostream &aus, ostream &difc) { // report the best graph
     int b;          // loop indices and best pointer
-    graph G(verts); // scratch graph
+    Graph G(verts);
     double En;
-    static double M[verts][verts];
-    static double Ent[verts];
+    double M[verts][verts];
+    double Ent[verts];
+
+//    for (int i = 0; i < popsize; ++i) {
+//        if (!dead[i]){
+//            fit[i] = fitness(*bPop[i], true);
+//        }
+//    }
 
     b = 0;
     if (fitFun == 0) {
         for (int i = 1; i < popsize; i++) {
-            if (fit[i] > fit[b]) {
+            if (fit[i] > fit[b] && !dead[i]) {
                 b = i; // find best fitness
             }
         }
     } else if (fitFun == 1) {
         for (int i = 1; i < popsize; i++) {
-            if (fit[i] < fit[b]) {
+            if (fit[i] < fit[b] && !dead[i]) {
                 b = i; // find best fitness
             }
         }
     }
 
-    // output the fitness and the associated data
-    G.empty(verts);
     aus << fit[b] << " -fitness" << endl;
-    if (bitRep) {
-        // Write the SDA
-        aus << "Self-Driving Automata" << endl;
-        bPop[b]->print(aus);
-        int size = verts * (verts - 1) / 2;
-        vector<int> vals = bPop[b]->getBitsVec(size);
-        int vIdx = 0;
-        for (int row = 0; row < verts; ++row) {
-            for (int col = row + 1; col < verts; ++col) {
-                G.forceAdd(row, col, vals[vIdx++]);
-            }
-        }
-    } else {
-        // Write the gene
-        aus << "Gene" << endl;
-        aus << pop[b][0];
-        for (int i = 1; i < GL; i++) {
-            aus << " " << pop[b][i];
-        }
-        aus << endl;
-        express(G, pop[b]);
-    }
+    // Write the SDA
+    aus << "Self-Driving Automata" << endl;
+    bPop[b].print(aus);
+    int size = verts * (verts - 1) / 2;
+    bPop[b].printBitsVec(size, aus);
+    vector<int> vals = bPop[b].getBitsVec(size);
+    int vIdx = 0;
+    G.fill(vals, diagFill);
 
     aus << "Graph" << endl;
-    G.write(aus);
+    G.print(aus);
     aus << endl;
-    for (int i = 0; i < G.size(); i++) {
-        G.DiffChar(i, omega, M[i]);
-    }
-
-    for (int i = 0; i < G.size(); i++) {             // loop over vertices
-        En = 0.0; // prepare En for normalizing
-        for (int j = 0; j < G.size(); j++) {
-            En += M[i][j]; // total the amount of gas at vertex i
-        }
-        for (int j = 0; j < G.size(); j++) {
-            M[i][j] /= En; // normalize so sum(gas)=1
-        }
-        En = 0.0; // zero the entropy accumulator
-        for (int j = 0; j < G.size(); j++) { // build up the individual entropy terms
-            if (M[i][j] > 0) {
-                En += -M[i][j] * log(M[i][j]); // this is entropy base E
-            }
-        }
-        Ent[i] = En / log(2); // convert entropy to Log base 2
-    }
-
-    // Now sort the entropy vector
-    bool more = false; // no swaps
-    do { // swap out-of-order entries
-        more = false;
-        for (int i = 0; i < G.size() - 1; i++) {
-            if (Ent[i] < Ent[i + 1]) {
-                En = Ent[i];
-                Ent[i] = Ent[i + 1];
-                Ent[i + 1] = En; // swap
-                more = true;     // set the flag that a swap happened
-            }
-        }
-    } while (more); // until in order
-
-    difc << Ent[0]; // output first entropy value
-    for (int i = 1; i < G.size(); i++) {
-        difc << " " << Ent[i]; // output remaining values
-    }
-    difc << endl; // end line
+    //TODO: Later, fix.
+//    for (int i = 0; i < G.size(); i++) {
+//        G.DiffChar(i, omega, M[i]);
+//    }
+//
+//    for (int i = 0; i < G.size(); i++) {             // loop over vertices
+//        En = 0.0; // prepare En for normalizing
+//        for (int j = 0; j < G.size(); j++) {
+//            En += M[i][j]; // total the amount of gas at vertex i
+//        }
+//        for (int j = 0; j < G.size(); j++) {
+//            M[i][j] /= En; // normalize so sum(gas)=1
+//        }
+//        En = 0.0; // zero the entropy accumulator
+//        for (int j = 0; j < G.size(); j++) { // build up the individual entropy terms
+//            if (M[i][j] > 0) {
+//                En += -M[i][j] * log(M[i][j]); // this is entropy base E
+//            }
+//        }
+//        Ent[i] = En / log(2); // convert entropy to Log base 2
+//    }
+//
+//    // Now sort the entropy vector
+//    bool more = false; // no swaps
+//    do { // swap out-of-order entries
+//        more = false;
+//        for (int i = 0; i < G.size() - 1; i++) {
+//            if (Ent[i] < Ent[i + 1]) {
+//                En = Ent[i];
+//                Ent[i] = Ent[i + 1];
+//                Ent[i + 1] = En; // swap
+//                more = true;     // set the flag that a swap happened
+//            }
+//        }
+//    } while (more); // until in order
+//
+//    difc << Ent[0]; // output first entropy value
+//    for (int i = 1; i < G.size(); i++) {
+//        difc << " " << Ent[i]; // output remaining values
+//    }
+//    difc << endl; // end line
 }

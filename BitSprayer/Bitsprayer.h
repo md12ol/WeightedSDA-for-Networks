@@ -1,20 +1,21 @@
-#ifndef MEDICALPREDICTOR_BITSPRAYER_H
-#define MEDICALPREDICTOR_BITSPRAYER_H
+#ifndef BITSPRAYER_H
+#define BITSPRAYER_H
 
 #include <cmath>
 #include <list>
 #include <sstream>
 #include <vector>
 #include <iostream>
-#include <time.h>
+#include <ctime>
 #include <fstream>
+#include <cstdlib>
 
 using namespace std;
 
 class Bitsprayer {
-  public:
+public:
     Bitsprayer();           //creates an unallocated bitspray
-    Bitsprayer(int states);      //create a bitspray with buffer S states
+    explicit Bitsprayer(int states, double prob);      //create a bitspray with buffer S states
     Bitsprayer(Bitsprayer &other);  //copy constructor
     ~Bitsprayer();                //destructor
 
@@ -24,17 +25,17 @@ class Bitsprayer {
     int print();
     int print(ostream &aus);
     static int destroy();
-
     int twoPtCrossover(Bitsprayer &other);
     int mutate(int numMuts);
-
     vector<int> getBitsVec(int len);
+    int printBitsVec(int len, ostream &aus);
 
-  private:
+private:
     int initInput;
     int numStates;
     int initState;
     int curState;
+    double zeroProb;
     vector<int> buf;
     vector<vector<int> > transitions;
     vector<vector<vector<int> > > responses;

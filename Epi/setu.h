@@ -1,11 +1,8 @@
-/*
- *   Interface for a class implimenting sets of natural numbers
- *
- */
 #ifndef _SETU_H
 #define _SETU_H
 
 #include <vector>
+#include <cstdlib>
 using namespace std;
 
 // The is the number of new vertices created when a set enlarges

@@ -4,28 +4,29 @@
 #define MAXVAL 6
 
 Bitsprayer::Bitsprayer() {
-
     initInput = -1;
     numStates = -1;
     initState = -1;
     curState = -1;
 //    transitions = {{}};
 //    responses = {{{}}};
+    zeroProb = -1;
     if (VERBOSEBIT) cout << "Bitsprayer Made" << endl;
 }
 
-Bitsprayer::Bitsprayer(int states) {
-
+Bitsprayer::Bitsprayer(int states, double prob) {
     initInput = -1;
     numStates = states;
     initState = -1;
     curState = -1;
     transitions.reserve(states);
-    for (vector<int> v: transitions){
+    zeroProb = prob;
+
+    for (vector<int> v: transitions) {
         v.reserve(MAXVAL);
     }
     responses.reserve(states);
-    for (vector<vector<int> > v: responses){
+    for (vector<vector<int> > v: responses) {
         v.reserve(MAXVAL);
     }
 
@@ -43,10 +44,21 @@ Bitsprayer::~Bitsprayer() {
 }
 
 int Bitsprayer::create(int states) {
-    initInput = (int)lrand48() % MAXVAL;
     numStates = states;
+    randomize();
+    return 0;
+}
+
+int Bitsprayer::randomize() {
+    initInput = (int) lrand48() % MAXVAL;
+    if (initInput < 0) {
+        cout << "ERROR! initInput is negative!" << endl;
+    }
     initState = 0;
     curState = -1;
+
+    transitions.clear();
+    responses.clear();
 
     vector<int> oneState;
     for (int s = 0; s < numStates; ++s) {
@@ -58,43 +70,24 @@ int Bitsprayer::create(int states) {
     }
 
     vector<int> oneResponse;
-    vector <vector<int>> oneStateResps;
+    vector<vector<int>> oneStateResps;
     int respSize;
     for (int s = 0; s < numStates; ++s) {
         oneStateResps.clear();
         for (int t = 0; t < MAXVAL; ++t) {
             oneResponse.clear();
-            respSize = (int)lrand48() % 2 + 1;
+            respSize = (int) lrand48() % 2 + 1;
             for (int i = 0; i < respSize; ++i) {
-                oneResponse.push_back((int)lrand48() % MAXVAL);
+                if (drand48() < zeroProb) {
+                    oneResponse.push_back(0);
+                } else {
+                    oneResponse.push_back((int) lrand48() % (MAXVAL - 1) + 1);
+                }
+                //TODO: Check!
             }
             oneStateResps.push_back(oneResponse);
         }
         responses.push_back(oneStateResps);
-    }
-    if (VERBOSEBIT) cout << "Bitsprayer Created w " << states << " states" << endl;
-    return 0;
-}
-
-int Bitsprayer::randomize() {
-    initInput = (int) lrand48() % 2;
-    // TODO: Change start state?
-//    initState = (int) lrand48()%numStates;
-    curState = -1;
-
-    vector<int> oneResponse;
-    int respSize;
-    for (int s = 0; s < numStates; ++s) {
-        transitions.at(s).at(0) = (int)lrand48() % numStates;
-        transitions.at(s).at(1) = (int)lrand48() % numStates;
-        for (int t = 0; t < 2; ++t) {
-            oneResponse.clear();
-            respSize = (int)lrand48() % 2 + 1;
-            for (int i = 0; i < respSize; ++i) {
-                oneResponse.push_back((int)lrand48() % MAXVAL);
-            }
-            responses.at(s).at(t) = oneResponse;
-        }
     }
     return 0;
 }
@@ -102,8 +95,9 @@ int Bitsprayer::randomize() {
 int Bitsprayer::copy(Bitsprayer &other) {
     initInput = other.initInput;
     numStates = other.numStates;
-    initInput = other.initState;
+    initState = other.initState;
     curState = other.curState;
+    zeroProb = other.zeroProb;
 
     transitions = other.transitions;
     responses = other.responses;
@@ -119,19 +113,34 @@ int Bitsprayer::print() {
 int Bitsprayer::print(ostream &aus) {
     aus << initState << " <- " << initInput << endl;
     for (int s = 0; s < numStates; ++s) {
+        if (transitions[s].size() > MAXVAL) {
+            aus << "ERROR!  More transitions than MAXVAL!" << endl;
+        }
+        if (responses[s].size() > MAXVAL) {
+            aus << "ERROR!  More responses than MAXVAL!" << endl;
+        }
         for (int t = 0; t < MAXVAL; ++t) {
-            aus << s << " -> " << transitions.at(s).at(t) << " [";
+            aus << s << " + " << t << " -> " << transitions.at(s).at(t) << " [";
+            if (responses[s][t].size() > 2) {
+                aus << "ERROR!  Response length more than 2!" << endl;
+            }
             for (int v: responses.at(s).at(t)) {
                 aus << " " << v;
             }
             aus << " ]" << endl;
         }
     }
+    if (transitions.size() > numStates) {
+        aus << "ERROR!  More transitions than the number of states!" << endl;
+    }
+    if (responses.size() > numStates) {
+        aus << "ERROR!  More responses than the number of states!" << endl;
+    }
     if (VERBOSEBIT) cout << "Bitsprayer Printed" << endl;
     return 0;
 }
 
-int Bitsprayer::destroy(){
+int Bitsprayer::destroy() {
     return 0;
 }
 
@@ -140,7 +149,7 @@ int Bitsprayer::twoPtCrossover(Bitsprayer &other) {
     int swapInt;
     vector<int> swapVec;
 
-    if (numStates != other.numStates){
+    if (numStates != other.numStates) {
         return 1;
     }
 
@@ -152,7 +161,7 @@ int Bitsprayer::twoPtCrossover(Bitsprayer &other) {
             cp1 = cp2;
             cp2 = swapInt;
         }
-    } while (cp1==cp2);
+    } while (cp1 == cp2);
 
     if (cp1 == 0) {
         swapInt = initInput;
@@ -174,7 +183,7 @@ int Bitsprayer::twoPtCrossover(Bitsprayer &other) {
     return 0;
 }
 
-int Bitsprayer::mutate(int numMuts){
+int Bitsprayer::mutate(int numMuts) {
     int mutPt;
     vector<int> oneResponse;
     int respSize;
@@ -182,13 +191,13 @@ int Bitsprayer::mutate(int numMuts){
     for (int m = 0; m < numMuts; ++m) {
         mutPt = (int) lrand48() % (2 * numStates + 1);
 
-        if (mutPt == 0){
-            initInput = 1-initInput;
+        if (mutPt == 0) {
+            initInput = (int) lrand48() % MAXVAL;
             return 0;
         }
-        mutPt = (mutPt - 1)/2;
+        mutPt = (mutPt - 1) / 2;
         int transNum = (int) lrand48() % MAXVAL;
-        if ((int)lrand48() % 2 == 0){ // Mutate transition
+        if ((int) lrand48() % 2 == 0) { // Mutate transition
             transitions.at(mutPt).at(transNum) = (int) lrand48() % numStates;
         } else { // Mutate response
             oneResponse.clear();
@@ -202,31 +211,34 @@ int Bitsprayer::mutate(int numMuts){
     return 0;
 }
 
-vector<int> Bitsprayer::getBitsVec(int len){
+vector<int> Bitsprayer::getBitsVec(int len) {
     vector<int> rtn;
+    rtn.clear();
     int nextBit;
+    int cnt = 0;
     curState = initState;
     buf.clear();
-    rtn.push_back(initInput);
     buf.push_back(initInput);
 
-    while (rtn.size() < len){
+    while (cnt < len) {
         nextBit = buf.front();
+        rtn.push_back(nextBit);
         buf.erase(buf.begin());
-        for(int i: responses.at(curState).at(nextBit)){
+        for (int i: responses.at(curState).at(nextBit)) {
             buf.push_back(i);
-            rtn.push_back(i);
         }
         curState = transitions.at(curState).at(nextBit);
+        cnt++;
     }
     return rtn;
 }
 
-int printVec(vector<int> vec){
-    for (int i:vec) {
-        cout<<i<<" ";
+int Bitsprayer::printBitsVec(int len, ostream &aus) {
+    vector<int> vec = getBitsVec(len);
+    for (int i: vec) {
+        aus << i << " ";
     }
-    cout<<endl;
+    aus << endl;
     return 0;
 }
 
