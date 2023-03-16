@@ -1,5 +1,5 @@
 #include "Graph.h"
-#include "Bitsprayer.h"
+#include "../BitSprayer/Bitsprayer.h"
 
 Graph::Graph() {
     numNodes = 0;
@@ -10,7 +10,6 @@ Graph::Graph() {
 Graph::Graph(int nn) {
     numNodes = nn;
     numEdges = 0;
-    numEdges = 0;
     totWeight = 0;
 
     adjM.reserve(nn);
@@ -18,6 +17,43 @@ Graph::Graph(int nn) {
     for (int i = 0; i < nn; ++i) {
         adjM.push_back(row);
     }
+}
+
+int Graph::fill(const string fname) {
+    numNodes = 0;
+    numEdges = 0;
+    totWeight = 0;
+
+    ifstream infile(fname);
+    string line;
+    getline(infile, line);
+    infile >> numNodes;
+    getline(infile, line);
+
+    adjM.reserve(numNodes);
+    vector<int> row(numNodes);
+    for (int i = 0; i < numNodes; ++i) {
+        adjM.push_back(row);
+    }
+
+    int from = 0;
+    while (getline(infile, line)) {
+        stringstream ss(line);
+
+        int to;
+        while (ss >> to) {
+            if (from < to) {
+                if (adjM[from][to] == 0) {
+                    numEdges++;
+                }
+                adjM[from][to]++;
+                adjM[to][from]++;
+                totWeight++;
+            }
+        }
+        from++;
+    }
+    return 0;
 }
 
 void Graph::print(ostream &out) {
@@ -35,7 +71,7 @@ void Graph::print(ostream &out) {
 //            out << adjM[row][col] << " ";
 //                out << col << "[" << adjM[row][col] << "] ";
                 for (int i = 0; i < adjM[row][col]; ++i) {
-                    out<<col<<" ";
+                    out << col << " ";
                 }
             }
         }
@@ -67,9 +103,9 @@ int Graph::fill(vector<int> &weights, bool diag) {
         cout << "ERROR!  numNodes updated incorrectly!!" << endl;
         numNodes = nn;
     }
-    
+
     int idx = 0;
-    if (diag){
+    if (diag) {
         int col;
         for (int iter = 1; iter < numNodes; ++iter) {
             for (int row = 0; row < numNodes - iter; ++row) {
@@ -83,8 +119,8 @@ int Graph::fill(vector<int> &weights, bool diag) {
                 idx += 1;
             }
         }
-        if (idx != weights.size()){
-            cout<<"ERROR! Diag fill not working!"<<endl;
+        if (idx != weights.size()) {
+            cout << "ERROR! Diag fill not working!" << endl;
         }
     } else {
         for (int row = 0; row < numNodes; row++) {
@@ -117,7 +153,7 @@ vector<int> Graph::SIR(double alpha, int p0) {
     vector<int> profile;
     profile.reserve(numNodes);
 
-    for (int i = 0; i < numNodes; i++){
+    for (int i = 0; i < numNodes; i++) {
         state[i] = 0;
     }
     len = 0;
@@ -127,7 +163,7 @@ vector<int> Graph::SIR(double alpha, int p0) {
 
     while (curI > 0) {
         for (int i = 0; i < numNodes; ++i) {
-            nin[i]=0;
+            nin[i] = 0;
         }
         for (int node = 0; node < numNodes; ++node) {
             if (state[node] == 1) {
@@ -165,6 +201,10 @@ vector<int> Graph::SIR(double alpha, int p0) {
         profile.push_back(curI);
     }
     return profile;
+}
+
+int Graph::hammy_distance(Graph &other){
+    return 100;
 }
 
 //int main(){

@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <cstdlib>
+#include <iostream>
+
 using namespace std;
 
 // The is the number of new vertices created when a set enlarges

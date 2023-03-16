@@ -13,6 +13,8 @@ using namespace std;
 #define GHC_USE_STD_FS
 
 #include <filesystem>
+#include <mutex>
+#include <thread>
 
 namespace filesystem = std::filesystem;
 #endif
@@ -31,45 +33,45 @@ namespace filesystem = ghc::filesystem;
 /*************************algorithm controls******************************/
 //#define PL 16
 int PL = 16;
-//#define NSE 5
-int NSE = 5;
+#define NSE 5
+//int NSE = 5;
 #define alpha 0.3
 #define mepl 3              //  Minimum epidemic length
 #define rse 5               //  Re-try short epidemics
 #define FTL 50              //  Final test length
 #define verbose true
 #define runs 30
-#define RNS 9120783
+//#define RNS 9120783
+int RNS;
 #define tsize 5
 
 int verts;
-int mevs;
-int popsize;
+//int mevs;
+//int popsize;
 int states;
 int MNM;
 //#define verts 128
-//#define mevs 10000
-//#define popsize 10
+#define mevs 50000
+#define popsize 250
 //#define states 8
 //#define MNM 7
 
 #define RIs 100
-//#define RE ((long)mevs / RIs)
-int RE;
-//#define P0UPS 2
-int P0UPS;
-//#define P0INT ((long)mevs/P0UPS)
-int P0INT;
+#define RE ((long)mevs / RIs)
+//int RE;
+#define P0UPS 2
+//int P0UPS;
+#define P0INT ((long)mevs/P0UPS)
+//int P0INT;
 #define omega 0.5 // DiffChar
 #define ent_thres 1.0 // Necrotic Filter
 bool *dead;
 double worst_fit;
 
-vector<double> edgBnds;
-vector<int> wghtBnds;
-double zeroProb;
-bool diagFill;
-
+static vector<double> edgBnds = {1, 4};
+static vector<int> wghtBnds = {4, 16};
+static double zeroProb = 0.90;
+static bool diagFill = true;
 
 /**************************Variable dictionary************************/
 Bitsprayer *bPop;
@@ -79,6 +81,7 @@ int *dx;   //  Sorting index
 double *PD; //  Profile dictionary
 int fitFun;          //  Profile?
 int patient0; //  patient zero
+Graph dublin_graph;
 
 /****************************Procedures********************************/
 void initalg(const char *pLoc); // initialize the algorithm
@@ -94,11 +97,13 @@ double fitnessBit(Graph &G, bool finalTest);
 int patientZeroUpdate(int mev, ostream &patient0out, bool finalUpdate);
 
 /****************************Main Routine*******************************/
+
 int main(int argc, char *argv[]) {
     /**
-     * Output Root, Mode, Verts, Mevs, States, Pop, Muts, Profile Number, RCode
+     * Output Root, Mode, Verts, States, Muts, Profile Number, Run0, RNS
      */
-    fstream stat, best, dchar, readme, patient0out; // statistics, best structures
+
+    fstream best, dchar, stat, readme, patient0out; // statistics, best structures
 
     char fn[70];                                           // file name construction buffer
     char *outLoc = new char[60];
@@ -106,50 +111,10 @@ int main(int argc, char *argv[]) {
     char *outRoot = argv[1];
     fitFun = atoi(argv[2]); //  0 - Epidemic Length, 1 - Profile Matching
     verts = atoi(argv[3]);
-    mevs = atoi(argv[4]);
-    states = atoi(argv[5]);
-    popsize = atoi(argv[6]);
-    MNM = atoi(argv[7]);
-
-    int RCode = atoi(argv[9]);
-    edgBnds = {1, 4};
-    wghtBnds = {4, 16};
-    zeroProb = 0.9;
-    P0UPS = 2;
-    diagFill = false;
-    RE = (int) mevs / RIs;
-
-    if (RCode == 1) {
-        edgBnds = {0.5, 5};
-    } else if (RCode == 2) {
-        wghtBnds = {2, 20};
-    } else if (RCode == 3) {
-        zeroProb = 0.85;
-    } else if (RCode == 4) {
-        zeroProb = 0.95;
-    } else if (RCode == 5) {
-        P0UPS = 2;
-    } else if (RCode == 6) {
-        P0UPS = 10;
-    } else if (RCode == 7) {
-        diagFill = true;
-    } else if (RCode == 8) {
-        mevs = 250000;
-    } else if (RCode == 9) {
-        edgBnds = {0.5, 5};
-        diagFill = true;
-    } else if (RCode == 10){
-        wghtBnds = {2, 20};
-        diagFill = true;
-    } else if (RCode == 11){
-        zeroProb = 0.85;
-        diagFill = true;
-    } else if (RCode == 12){
-        zeroProb = 0.95;
-        diagFill = true;
-    } else if (RCode == 13){
-        diagFill = true;
-    }
+    states = atoi(argv[4]);
+    MNM = atoi(argv[5]);
+    int run0 = atoi(argv[7]);
+    RNS = atoi(argv[8]);
 
     bPop = new Bitsprayer[popsize];
     fit = new double[popsize];
@@ -157,22 +122,26 @@ int main(int argc, char *argv[]) {
     dx = new int[popsize];
     dead = new bool[popsize];
 
-    RE = (int) (mevs / RIs);
-    P0INT = (int) (mevs / P0UPS);
-
     int pNum = -1;
-
     if (fitFun == 0) {
-        sprintf(outLoc, "%sR%d - EDBit%d w %06dG, %dS, %02dP, %dM/",
-                outRoot, RCode, verts, mevs, states, popsize, MNM);
+        sprintf(outLoc, "%sEDBit%d w %dS, %dM/", outRoot, verts, states, MNM);
     } else if (fitFun == 1) {
-        pNum = atoi(argv[8]);
-        if (pNum == 0){
+        pNum = atoi(argv[6]);
+        if (pNum == 0) {
             PL = 30;
+            verts = 200;
+            sprintf(outLoc, "%sPMBit%s on P%s w %dS, %dM/", outRoot, "DUB", "D", states, MNM);
+        } else {
+            sprintf(outLoc, "%sPMBit%d on P%d w %dS, %dM/", outRoot, verts, pNum, states, MNM);
         }
         PD = new double[PL + 1];
-        sprintf(outLoc, "%sR%d - PMBit%d on P%d w %06dG, %dS, %02dP, %dM/",
-                outRoot, RCode, verts, pNum, mevs, states, popsize, MNM);
+    } else if (fitFun == 2) {
+        pNum = 0;
+        PL = 30;
+        verts = 200;
+        sprintf(outLoc, "%sNMBit%s on P%s w %dS, %dM/", outRoot, "DUB", "D", states, MNM);
+        PD = new double[PL + 1];
+        dublin_graph.fill("./dublin_graph.dat");
     } else {
         cout << "ERROR! No outLoc for this fitFun!" << endl;
     }
@@ -181,15 +150,15 @@ int main(int argc, char *argv[]) {
 
     sprintf(pLoc, "./Profiles/Profile%d.dat", pNum);
     initalg(pLoc);
-    sprintf(fn, "%sbest.lint", outLoc);
+    sprintf(fn, "%sbest%02d.lint", outLoc, run0 + 1);
     best.open(fn, ios::out);
-    sprintf(fn, "%sdifc.dat", outLoc);
-    dchar.open(fn, ios::out);
+//    sprintf(fn, "%sdifc.dat", outLoc);
+//    dchar.open(fn, ios::out);
     sprintf(fn, "%sreadme.dat", outLoc);
     readme.open(fn, ios::out);
     createReadMe(readme);
     readme.close();
-    sprintf(fn, "%spatient0.dat", outLoc);
+    sprintf(fn, "%spatient0%02d.dat", outLoc, run0+1);
     patient0out.open(fn, ios::out);
     patient0out << "Patient Zero Update Info" << endl;
 
@@ -235,7 +204,7 @@ int main(int argc, char *argv[]) {
         cout << "Started" << endl;
     }
 
-    for (int run = 0; run < runs; ++run) {
+    for (int run = run0; run < run0+1; ++run) {
         patient0 = (int) lrand48() % verts;
         sprintf(fn, "%srun%02d.dat", outLoc, run + 1); // File name
         stat.open(fn, ios::out);
@@ -247,13 +216,7 @@ int main(int argc, char *argv[]) {
         patientZeroUpdate(0, patient0out, false);
         for (int mev = 0; mev < mevs; mev++) { // do mating events
             matingevent(); // run a mating event
-            if (RCode == 5 || RCode == 6 || RCode == 13) {
-                if (mev + 1 == mevs){
-                    patientZeroUpdate(mev, patient0out, true);
-                } else if ((mev + 1) % P0INT == 0) {
-                    patientZeroUpdate(mev, patient0out, false);
-                }
-            } else if ((mev + 1) < P0UPS * P0INT && (mev + 1) % P0INT == 0) {
+            if ((mev + 1) < P0UPS * P0INT && (mev + 1) % P0INT == 0) {
                 patientZeroUpdate(mev, patient0out, false);
             }
             if ((mev + 1) % RE == 0) { // Time for a report?
@@ -267,7 +230,8 @@ int main(int argc, char *argv[]) {
         }
         patient0out << endl;
         stat.close();
-        reportbest(best, dchar);
+//        reportbest(best, dchar);
+        reportbest(best, cout);
         cout << "Done run " << run + 1 << " of " << runs << endl;
     }
 
@@ -297,6 +261,9 @@ void createReadMe(ostream &aus) {
             aus << PD[i] << " ";
         }
         aus << endl;
+    } else if (fitFun == 2) {
+        aus << "Fitness Function: Network Matching" << endl;
+        aus << "Network: Dublin Graph" << endl;
     } else {
         cout << "ERROR! No read me for this fitFun setting!" << endl;
     }
@@ -337,6 +304,9 @@ void cmdLineIntro(ostream &aus) {
             aus << PD[i] << " ";
         }
         aus << endl;
+    } else if (fitFun == 2) {
+        aus << "Fitness Function: Network Matching" << endl;
+        aus << "Network: Dublin Graph" << endl;
     } else {
         cout << "ERROR! No read me for this fitFun setting!" << endl;
     }
@@ -354,7 +324,7 @@ void cmdLineRun(int run, ostream &aus) {
     aus << left << setw(10) << "SD";
     aus << left << setw(8) << "Best";
     aus << endl;
-    aus << left << setw(5) << run+1;
+    aus << left << setw(5) << run + 1;
     aus << left << setw(4) << "0";
 }
 
@@ -363,7 +333,7 @@ void initalg(const char *pLoc) { // initialize the algorithm
     char buf[20]; // input buffer
 
     srand48(RNS); // read the random number seed
-    if (fitFun == 1) {
+    if (fitFun == 1 || fitFun == 2) {
         inp.open(pLoc, ios::in); // open input file
         for (int i = 0; i < PL; i++) {
             PD[i] = 0; // pre-fill missing values
@@ -390,7 +360,7 @@ int patientZeroUpdate(int mev, ostream &patient0out, bool finalUpdate) {
         for (int i = 0; i < verts; i++) { // For every potential patient zero
             patient0 = i;
             for (int j = 0; j < popsize; j++) {
-                if (patient0 == origP0){
+                if (patient0 == origP0) {
                     oneFit = fit[j];
                 } else {
                     oneFit = fitness(bPop[j], false);
@@ -399,7 +369,7 @@ int patientZeroUpdate(int mev, ostream &patient0out, bool finalUpdate) {
                     bestP0 = i;
                     bestBit = j;
                     bestFit = oneFit;
-                } else if (fitFun == 1 && oneFit < bestFit) {
+                } else if ((fitFun == 1 || fitFun == 2) && oneFit < bestFit) {
                     bestP0 = i;
                     bestBit = j;
                     bestFit = oneFit;
@@ -409,7 +379,7 @@ int patientZeroUpdate(int mev, ostream &patient0out, bool finalUpdate) {
         patient0 = bestP0;
         fit[bestBit] = bestFit;
         for (int b = 0; b < popsize; ++b) {
-            if (b != bestBit){
+            if (b != bestBit) {
                 fit[b] = fitness(bPop[b], false);
             }
         }
@@ -428,7 +398,7 @@ int patientZeroUpdate(int mev, ostream &patient0out, bool finalUpdate) {
                 if (p0fit[k] > p0fit[patient0]) {
                     patient0 = k;
                 }
-            } else {
+            } else if (fitFun == 1 || fitFun == 2) {
                 if (p0fit[k] < p0fit[patient0]) {
                     patient0 = k;
                 }
@@ -546,6 +516,8 @@ double fitnessBit(Graph &G, bool finalTest) { // compute the fitness
             accu += trial;
         }
         accu = accu / NSE;
+    } else if (fitFun == 2) {
+        accu = G.hammy_distance(dublin_graph);
     }
     return accu; // return the fitness value
 }
@@ -556,31 +528,20 @@ double fitness(Bitsprayer &A, bool finalTest) {
     vals.reserve(size);
 
     vals = A.getBitsVec(size);
-//    A.printBitsVec(size, cout);
-    //    for (int i: vals) {
-//        cout << i << " ";
-//    }
-//    cout << endl;
     Graph G(verts);
     G.fill(vals, diagFill);
-//    G.print(cout);
-//    G.print(cout);
 
     double fi = fitnessBit(G, finalTest);
     return fi;
 }
 
 void initpop() { // initialize population
-//    int size = verts * (verts - 1) / 2;
     for (int i = 0; i < popsize; i++) {
         dead[i] = false;
         do {
             bPop[i].randomize();
         } while (necroticFilter(bPop[i]));
-//        bPop[i]->printBitsVec(size, cout);
         fit[i] = fitness(bPop[i], false);
-//        cout<<i<<endl;
-//        cout<<"Generated"<<endl;
         dx[i] = i;
     }
 }
@@ -592,7 +553,7 @@ void matingevent() { // run a mating event
     // perform tournament selection, highest fitness first
     if (fitFun == 0) {
         tselect(fit, dx, tsize, popsize);
-    } else {
+    } else if (fitFun == 1 || fitFun == 2) {
         Tselect(fit, dx, tsize, popsize);
     }
 
@@ -649,7 +610,7 @@ void report(ostream &aus) { // make a statistical report
                 }
             }
         }
-    } else if (fitFun == 1) {
+    } else if (fitFun == 1 || fitFun == 2) {
         if (D.Rmax() != worst_fit) {
             worst_fit = D.Rmax();
             for (int i = 0; i < popsize; i++) {
@@ -665,7 +626,7 @@ void report(ostream &aus) { // make a statistical report
     aus << left << setw(10) << D.Rsg();
     if (fitFun == 0) {
         aus << left << setw(8) << D.Rmax() << "\t";
-    } else if (fitFun == 1) {
+    } else if (fitFun == 1 || fitFun == 2) {
         aus << left << setw(8) << D.Rmin() << "\t";
     }
     aus << "Dead: " << deaths << endl;
@@ -675,7 +636,7 @@ void report(ostream &aus) { // make a statistical report
         cout << left << setw(10) << D.Rsg();
         if (fitFun == 0) {
             cout << left << setw(8) << D.Rmax() << "\t";
-        } else if (fitFun == 1) {
+        } else if (fitFun == 1 || fitFun == 2) {
             cout << left << setw(8) << D.Rmin() << "\t";
         }
         cout << "Dead: " << deaths << endl;
@@ -702,7 +663,7 @@ void reportbest(ostream &aus, ostream &difc) { // report the best graph
                 b = i; // find best fitness
             }
         }
-    } else if (fitFun == 1) {
+    } else if (fitFun == 1 || fitFun == 2) {
         for (int i = 1; i < popsize; i++) {
             if (fit[i] < fit[b] && !dead[i]) {
                 b = i; // find best fitness

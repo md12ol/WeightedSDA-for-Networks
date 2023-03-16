@@ -3,15 +3,17 @@ import os
 from operator import itemgetter
 
 import matplotlib.pyplot as plt
-import numpy as np
 from graphviz import Graph
+import numpy as np
 
-inp = "./BitOutput/"
+inp = "../../Conferences and Papers/2023 CIBCB/WSDA/BitOutDone/"
 outp = "./BitProcessed/"
+james_inp = "./BitOutput/"
 finame = "best.lint"
 samps = 30
 precision = 6
 col_width = 6 + precision
+
 
 def get_data(dir_path: str):
     fits = []
@@ -99,11 +101,64 @@ def get_data(dir_path: str):
     if len(hists) != samps:
         print("ERROR in hists: " + dir_path)
         pass
-    data = [[i+1, fits[i], SDAs[i], networks[i], edges[i], weights[i], hists[i], p0_list[i]] for i in range(samps)]
+    data = [[i + 1, fits[i], SDAs[i], networks[i], edges[i], weights[i], hists[i], p0_list[i]] for i in range(samps)]
     data.sort(key=itemgetter(1))  # Ascending
     if "ED" in dir_path:
         data.reverse()
         pass
+    return data
+
+
+def get_base_data(file_path: str):
+    data = []
+    with open(file_path) as f:
+        vals = []
+        lines = f.readlines()
+        for line in lines:
+            if line == "\n":
+                data.append(vals)
+                vals = []
+                pass
+            elif not line.__contains__("EE"):
+                vals.append(float(line))
+                pass
+            pass
+        data.append(vals)
+        pass
+    return data
+
+
+def get_james_data():
+    data = []
+    # ED
+    mode_data = []
+    exp_dat = get_base_data(james_inp + "ED128results.dat")
+    mode_data.append(exp_dat)
+    exp_dat = get_base_data(james_inp + "ED256results.dat")
+    mode_data.append(exp_dat)
+    data.append(mode_data)
+
+    # PM 1
+    mode_data = []
+    exp_dat = get_base_data(james_inp + "PM128Prof1results.dat")
+    mode_data.append(exp_dat)
+    exp_dat = get_base_data(james_inp + "PM256Prof1results.dat")
+    mode_data.append(exp_dat)
+    data.append(mode_data)
+
+    # PM 7
+    mode_data = []
+    exp_dat = get_base_data(james_inp + "PM128Prof7results.dat")
+    mode_data.append(exp_dat)
+    exp_dat = get_base_data(james_inp + "PM256Prof7results.dat")
+    mode_data.append(exp_dat)
+    data.append(mode_data)
+
+    # DUB
+    mode_data = []
+    exp_dat = get_base_data(james_inp + "PMdublinResults.dat")
+    mode_data.append(exp_dat)
+    data.append(mode_data)
     return data
 
 
@@ -123,6 +178,7 @@ def get_patient_zero(dir_path: str):
             pass
         pass
     return p0_list
+
 
 def writeStat(data: [], out):
     mean = float(np.mean(data))
@@ -195,7 +251,8 @@ def write_best(data: [], info: str, seed: str):
     pass
 
 
-def box_plot(bp, edge_color):
+def box_plot(bp, skip: int, edge_color):
+    base_colors = ["#808080", "#696969"]
     colors = ['#0000FF', '#00FF00', '#FFFF00']
     for whisker in bp['whiskers']:
         whisker.set(color='#8B008B', linewidth=1)
@@ -213,7 +270,10 @@ def box_plot(bp, edge_color):
         flier.set(marker='.', color='#e7298a', alpha=0.5, markersize=3)
 
     for idx, patch in enumerate(bp['boxes']):
-        patch.set(facecolor=colors[idx % len(colors)])
+        if idx < skip:
+            patch.set(facecolor=base_colors[idx % len(base_colors)])
+        else:
+            patch.set(facecolor=colors[idx % len(colors)])
         pass
     pass
 
@@ -332,173 +392,202 @@ def get_settings(dir: str):
     pass
 
 
-def make_from_dirs(dirs : [], title : str):
+def make_from_dirs(dirs: [], splits: [], titles: []):
     exp_lbls = []
     data = []
-    for dir in dirs:
-        exp_lbls.append(dir)
-        data.append(get_data(inp + dir + "/"))
+
+    split_dirs = []
+    for spl in splits:
+        dir_list = []
+        for dir in dirs:
+            if spl in dir:
+                dir_list.append(dir)
+                pass
+            pass
+        split_dirs.append(dir_list)
+        pass
+
+    for split in split_dirs:
+        lbl_list = []
+        split_data = []
+        for dir in split:
+            lbl_list.append(dir[:10])
+            split_data.append(get_data(inp + dir + "/"))
+            pass
+        exp_lbls.append(lbl_list)
+        data.append(split_data)
         pass
 
     # mode_stats[mode][size][exp] = [run's fitness vals]
     just_fits = []
-    for exp in data:
-        exp_fits = []
-        for run in exp:
-            exp_fits.append(run[1])
+    for split in data:
+        split_fits = []
+        for exp in split:
+            exp_fits = []
+            for run in exp:
+                exp_fits.append(run[1])
+                pass
+            split_fits.append(exp_fits)
             pass
-        just_fits.append(exp_fits)
+        just_fits.append(split_fits)
         pass
 
-    plt.rc('xtick', labelsize=8)
-    plt.rc('ytick', labelsize=8)
+    for split_idx in range(len(splits)):
+        plt.rc('xtick', labelsize=8)
+        plt.rc('ytick', labelsize=8)
 
-    f = plt.figure()
-    f.set_dpi(900)
-    f.set_figheight(8)
-    f.set_figwidth(10)
+        f = plt.figure()
+        f.set_dpi(900)
+        f.set_figheight(8)
+        f.set_figwidth(10)
 
-    plot = f.add_subplot(111)
+        plot = f.add_subplot(111)
 
-    bp = plot.boxplot(just_fits, patch_artist=True)
-    box_plot(bp, "#FFFFFF")
+        bp = plot.boxplot(just_fits[split_idx], patch_artist=True)
+        box_plot(bp, "#FFFFFF")
 
-    # plot.set_xticks(xpos[idx])
-    plot.set_xticklabels(exp_lbls, rotation=90)
+        # plot.set_xticks(xpos[idx])
+        plot.set_xticklabels(exp_lbls[split_idx], rotation=90)
 
-    f.suptitle(title, fontsize=12)
-    plot.set_xlabel("Experiment", fontsize=10)
-    plot.set_ylabel("Fitness", fontsize=10)
-    # for x in lxpos:
-    #     plot.axvline(x=x, color='black', linestyle='--', linewidth=0.75)
-    #     pass
-    plot.grid(visible="True", axis="y", which='major', color="darkgray", linewidth=0.75)
-    f.tight_layout()
-    f.savefig(outp + title+ ".png", dpi=900)
-    plt.close()
+        f.suptitle(titles[split_idx], fontsize=12)
+        plot.set_xlabel("Experiment", fontsize=10)
+        plot.set_ylabel("Fitness", fontsize=10)
+        # for x in lxpos:
+        #     plot.axvline(x=x, color='black', linestyle='--', linewidth=0.75)
+        #     pass
+        plot.grid(visible="True", axis="y", which='major', color="darkgray", linewidth=0.75)
+        f.tight_layout()
+        f.savefig(outp + titles[split_idx] + ".png", dpi=900)
+        plt.close()
+        pass
     pass
+
 
 def main():
     print("START")
     folder_names = os.listdir(inp)
-    mode_itms = [["ED"]]
-    # mode_itms = [["ED"], ["PM", "P1"], ["PM", "P7"]]
+    # mode_itms = [["ED"]]
+    mode_itms = [["ED"], ["PM", "P1"], ["PM", "P7"], ["PM", "DUB"]]
     # sizes = [128, 256, 384, 512]
     sizes = [128]
-    mode_dirs = [[[] for _ in range(len(sizes))] for _ in range(len(mode_itms))]  # ED[size], PM1[size], PM7[size]
-    muts = [2, 4, 6]
+    mode_dirs = [[[] for _ in range(len(sizes))] for _ in range(len(mode_itms))]  # ED[size], PM1[size], PM7[size], DUB[size]
+    muts = [1, 2, 3]
     # states = [12]
-    states = [8, 12, 16]
-    # popsize = [100]
-    popsize = [50, 100, 250]
+    states = [12, 16, 20]
 
     # plt.style.use("seaborn-dark")
+    # make_from_dirs(folder_names, ["ED", "PM"], ["Epidemic Length Tests", "Profile 1 Matching Tests"])
 
-    make_from_dirs(folder_names, "Epidemic Length Tests")
+    exp_lbls = ["Base1", "Base2"]
+    exp_dat = []
+    exp_idx = 1
+    for s in states:
+        for m in muts:
+            exp_dat.append([str(s) + "S", str(m) + "M"])
+            exp_lbls.append(str(exp_idx) + "(" + str(s) + ", " + str(m) + ")")
+            exp_idx += 1
+            pass
+        pass
 
+    for midx, itms in enumerate(mode_itms):
+        for sidx, size in enumerate(sizes):
+            for dat in exp_dat:
+                for fld in folder_names:
+                    if all(itm in fld for itm in itms) and str(size) not in fld and all(d in fld for d in dat):
+                        mode_dirs[midx][sidx].append(fld)
+                        pass
+                    if all(itm in fld for itm in itms) and str(size) in fld and all(d in fld for d in dat):
+                        mode_dirs[midx][sidx].append(fld)
+                        pass
+                    pass
+                pass
+            pass
+        pass
 
-    # exp_lbls = []
-    # exp_dat = []
-    # exp_idx = 1
-    # for p in popsize:
-    #     for s in states:
-    #         for m in muts:
-    #             exp_dat.append([" " + str(p) + "P", " " + str(s) + "S", str(m) + "M"])
-    #             exp_lbls.append(str(exp_idx) + "(" + str(p) + ", " + str(s) + ", " + str(m) + ")")
-    #             exp_idx += 1
-    #             pass
-    #         pass
-    #     pass
-    #
-    # for midx, itms in enumerate(mode_itms):
-    #     for sidx, size in enumerate(sizes):
-    #         for dat in exp_dat:
-    #             for fld in folder_names:
-    #                 if all(itm in fld for itm in itms) and str(size) in fld and all(d in fld for d in dat):
-    #                     mode_dirs[midx][sidx].append(fld)
-    #                     pass
-    #                 pass
-    #             pass
-    #         pass
-    #     pass
-    #
-    # # mode_data[mode][size][exp][run][0] = run num
-    # # mode_data[mode][size][exp][run][1] = run's fit (sorted based on this)
-    # # mode_data[mode][size][exp][run][2][:] = run's SDA
-    # # mode_data[mode][size][exp][run][3][:] = run's network
-    # # mode_data[mode][size][exp][run][4] = run's network's edges
-    # # mode_data[mode][size][exp][run][5] = run's network's weight
-    # # mode_data[mode][size][exp][run][6][:] = run's network's weight hist
-    # # mode_data[mode][size][exp][run][7] = run's network's best p0
-    # mode_data = [[[] for _ in range(len(sizes))] for _ in range(len(mode_itms))]
-    # for midx, itms in enumerate(mode_itms):
-    #     for sidx, size in enumerate(sizes):
-    #         for fld in mode_dirs[midx][sidx]:
-    #             mode_data[midx][sidx].append(get_data(inp + fld + "/"))
-    #             pass
-    #         pass
-    #     pass
-    #
-    # # mode_stats[mode][size][exp] = [run's fitness vals]
-    # mode_stats = [[[] for _ in range(len(sizes))] for _ in range(len(mode_itms))]
-    # for midx, itms in enumerate(mode_itms):
-    #     for sidx, size in enumerate(sizes):
-    #         mode_fits = []
-    #         for exp in mode_data[midx][sidx]:
-    #             exp_fits= []
-    #             for run in exp:
-    #                 exp_fits.append(run[1])
-    #                 pass
-    #             mode_stats[midx][sidx].append(exp_fits)
-    #             pass
-    #         pass
-    #     pass
-    #
+    # mode_data[mode][size][exp][run][0] = run num
+    # mode_data[mode][size][exp][run][1] = run's fit (sorted based on this)
+    # mode_data[mode][size][exp][run][2][:] = run's SDA
+    # mode_data[mode][size][exp][run][3][:] = run's network
+    # mode_data[mode][size][exp][run][4] = run's network's edges
+    # mode_data[mode][size][exp][run][5] = run's network's weight
+    # mode_data[mode][size][exp][run][6][:] = run's network's weight hist
+    # mode_data[mode][size][exp][run][7] = run's network's best p0
+    mode_data = [[[] for _ in range(len(sizes))] for _ in range(len(mode_itms))]
+    for midx, itms in enumerate(mode_itms):
+        for sidx, size in enumerate(sizes):
+            for fld in mode_dirs[midx][sidx]:
+                mode_data[midx][sidx].append(get_data(inp + fld + "/"))
+                pass
+            pass
+        pass
+
+    # base_stats[mode][size][exp] = [run's fitness vals]
+    base_stats = get_james_data()
+
+    # mode_stats[mode][size][exp] = [run's fitness vals]
+    mode_stats = [[[] for _ in range(len(sizes))] for _ in range(len(mode_itms))]
+    for midx, itms in enumerate(mode_itms):
+        for sidx, size in enumerate(sizes):
+            mode_stats[midx][sidx].append(base_stats[midx][sidx][0])
+            mode_stats[midx][sidx].append(base_stats[midx][sidx][1])
+            for exp in mode_data[midx][sidx]:
+                exp_fits= []
+                for run in exp:
+                    exp_fits.append(run[1])
+                    pass
+                mode_stats[midx][sidx].append(exp_fits)
+                pass
+            pass
+        pass
+
     # titles = ["Epidemic Length"]
-    # # titles = ["Epidemic Length", "Epidemic Profile Matching P1", "Epidemic Profile Matching P7"]
-    # names = ["EL_boxplot", "PM1_boxplot", "PM7_boxplot"]
-    # # xsp = [[i for i in range(len(all_data[0]))], [i for i in range(len(all_data[1]))]]
-    # # xpos = [xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1]]
-    # ylb = ["Fitness", "Fitness", "Fitness"]
-    # xlb = ["Experiment (Pop. Size, Num. States, Max. Mutations)",
-    #        "Experiment (Pop. Size, Num. States, Max. Mutations)",
-    #        "Experiment (Pop. Size, Num. States, Max. Mutations)"]
-    #
-    # # lxpos = []
-    # # for i in range(2, len(all_data[0]) - 3, 3):
-    # #     lxpos.append(i + 0.5)
-    # #     pass
-    #
-    # for idx in range(len(titles)):
-    #     for sidx, size in enumerate(sizes):
-    #         plt.rc('xtick', labelsize=6)
-    #         plt.rc('ytick', labelsize=6)
-    #
-    #         f = plt.figure()
-    #         f.set_dpi(900)
-    #         f.set_figheight(4)
-    #         f.set_figwidth(8)
-    #
-    #         plot = f.add_subplot(111)
-    #
-    #         bp = plot.boxplot(mode_stats[idx][sidx], patch_artist=True)
-    #         box_plot(bp, "#FFFFFF")
-    #
-    #         # plot.set_xticks(xpos[idx])
-    #         plot.set_xticklabels(exp_lbls, rotation=90)
-    #
-    #         f.suptitle(titles[idx] + " w " + str(size) + " Nodes", fontsize=12)
-    #         plot.set_xlabel(xlb[idx], fontsize=10)
-    #         plot.set_ylabel(ylb[idx], fontsize=10)
-    #         # for x in lxpos:
-    #         #     plot.axvline(x=x, color='black', linestyle='--', linewidth=0.75)
-    #         #     pass
-    #         plot.grid(visible="True", axis="y", which='major', color="darkgray", linewidth=0.75)
-    #         f.tight_layout()
-    #         f.savefig(outp + names[idx] + ".png", dpi=900)
-    #         plt.close()
-    #         pass
+    titles = ["Epidemic Length", "Epidemic Profile Matching P1", "Epidemic Profile Matching P7", "Epidemic Profile Matching Dublin"]
+    names = ["EL_boxplot", "PM1_boxplot", "PM7_boxplot", "DUB_boxplot"]
+    # xsp = [[i for i in range(len(all_data[0]))], [i for i in range(len(all_data[1]))]]
+    # xpos = [xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1]]
+    ylb = ["Fitness", "Fitness", "Fitness", "Fitness"]
+    xlb = ["Experiment (Num. States, Max. Mutations)",
+           "Experiment (Num. States, Max. Mutations)",
+           "Experiment (Num. States, Max. Mutations)",
+           "Experiment (Num. States, Max. Mutations)"]
 
+    # lxpos = []
+    # for i in range(2, len(all_data[0]) - 3, 3):
+    #     lxpos.append(i + 0.5)
+    #     pass
+
+    for idx in range(len(titles)):
+        for sidx, size in enumerate(sizes):
+            plt.rc('xtick', labelsize=6)
+            plt.rc('ytick', labelsize=6)
+
+            f = plt.figure()
+            f.set_figheight(5)
+            f.set_figwidth(8)
+            plot = f.add_subplot(111)
+
+            bp = plot.boxplot(mode_stats[idx][sidx], patch_artist=True)
+            box_plot(bp, 2, "#FFFFFF")
+
+            # plot.set_xticks(xpos[idx])
+            plot.set_xticklabels(exp_lbls, rotation=90)
+
+            if not titles[idx].__contains__("Dublin"):
+                f.suptitle(titles[idx] + " w " + str(size) + " Nodes", fontsize=12)
+            else:
+                f.suptitle(titles[idx], fontsize=12)
+                pass
+            plot.set_xlabel(xlb[idx], fontsize=10)
+            plot.set_ylabel(ylb[idx], fontsize=10)
+            # for x in lxpos:
+            #     plot.axvline(x=x, color='black', linestyle='--', linewidth=0.75)
+            #     pass
+            plot.grid(visible="True", axis="y", which='major', color="darkgray", linewidth=0.75)
+            f.tight_layout()
+            f.savefig(outp + names[idx] + ".png", dpi=300)
+            plt.close()
+            pass
+        pass
 
 
     # plt.rc('xtick', labelsize=6)

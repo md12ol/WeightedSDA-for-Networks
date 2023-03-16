@@ -90,14 +90,20 @@ def make_prof(adj_lists: List[List[int]], nodes: int, p0):
 
 
 def main():
-    file = "./dubgraph.txt"
+    file = "./raw_network.txt"
     adj = [[0 for _ in range(200)] for _ in range(200)]
+    edges = 0
+    tot_weight = 0
+    weight_cnt = [0 for _ in range(5)]
     with open(file, 'r') as f:
         lines = f.readlines()
         for line in lines:
             if line != '\n':
                 line = line.rstrip('\n')
                 li = line.split('\t')
+                edges += 1
+                tot_weight += int(li[2])
+                weight_cnt[int(li[2])-1] += 1
                 adj[int(li[0])][int(li[1])] = int(li[2])
                 adj[int(li[1])][int(li[0])] = int(li[2])
                 pass
@@ -105,11 +111,15 @@ def main():
         pass
 
     lists = []
-    with open("dubgraph_forJames.dat", "w") as f:
+    with open("dublin_graph.dat", "w") as f:
+        f.write(str(200) + " " + str(edges) + " " + str(tot_weight) + "\n")
+        for val in weight_cnt:
+            f.write(str(val) + " ")
+            pass
+        f.write("\n")
         for rowIdx in range(200):
             li = []
             for colIdx in range(200):
-
                 for _ in range(int(adj[rowIdx][colIdx])):
                     li.append(int(colIdx))
                     f.write(str(colIdx) + " ")
@@ -120,13 +130,13 @@ def main():
             pass
         pass
 
-    avgProf = make_prof(lists, 200, 0)
+    # avgProf = make_prof(lists, 200, 0)
 
-    with open("Profiles/Profile0.dat", "w") as f:
-        for av in avgProf:
-            f.write(str(av) + "\n")
-            pass
-        pass
+    # with open("Profiles/Profile0.dat", "w") as f:
+    #     for av in avgProf:
+    #         f.write(str(av) + "\n")
+    #         pass
+    #     pass
 
     pass
 
