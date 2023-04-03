@@ -1,21 +1,12 @@
 import copy
-# import operator
-# import math
 import random
-import sys
-import numpy as np
-import csv
 import os
-# import pandas as pd
 from math import exp, log
-# import matplotlib.pyplot
-# from PIL import Image, ImageTk
-# from graphviz import Graph
-from statistics import mean
-
+import matplotlib.pyplot as plt
 from typing import List
 
 alpha = 0.3
+outp = "./BitProcessed/"
 
 
 def infected(sick: int):
@@ -73,7 +64,7 @@ def make_prof(adj_lists: List[List[int]], nodes: int, p0):
             pass
         pass
 
-    avg_prof = [0 for _ in range(most)]
+    avg_prof = [0.0 for _ in range(most)]
     for idx in range(most):
         for pr in logs:
             if idx < len(pr):
@@ -89,7 +80,92 @@ def make_prof(adj_lists: List[List[int]], nodes: int, p0):
     return avg_prof
 
 
+def get_vals(filename: str):
+    dat = []
+    with open(filename) as f:
+        lines = f.readlines()
+        for line in lines:
+            dat.append(float(line))
+            pass
+        pass
+
+    if dat[0] != 1:
+        dat.insert(0, 1)
+        pass
+
+    if dat[-1] != 0.0:
+        dat.append(0)
+        pass
+
+    return dat
+
+
+def make_profiles_in_dir(dir: str):
+    files = os.listdir(dir)
+    for fidx, file in enumerate(files):
+        if file.__contains__(".dat"):
+            plt.rc('xtick', labelsize=6)
+            plt.rc('ytick', labelsize=6)
+
+            f = plt.figure()
+            f.set_figheight(5)
+            f.set_figwidth(8)
+            plot = f.add_subplot(111)
+
+            vals = get_vals(dir + file)
+            xs = [i for i in range(len(vals))]
+            plot.plot(vals, color="#87cefa", marker='o', mfc='r', mec='black')
+
+            if file.__contains__(str(0)):
+                f.suptitle("Dublin Epidemic Profile", fontsize=12)
+                # for x,y in zip(xs, vals):
+                #     if x %2 == 0:
+                #         plot.annotate(str(y), (x, y), textcoords="offset points", xytext=(0, -13), ha='center',
+                #                       fontsize=8)
+                #     else:
+                #         plot.annotate(str(y), (x, y), textcoords="offset points", xytext=(0, 5), ha='center',
+                #                       fontsize=8)
+                #     pass
+                pass
+            elif file.__contains__(str(1)):
+                f.suptitle("Unimodal Epidemic Profile", fontsize=12)
+            elif file.__contains__(str(7)):
+                f.suptitle("Bimodal Epidemic Profile", fontsize = 12)
+                pass
+
+            plot.set_xlabel("Time Step", fontsize=10)
+            plot.set_ylabel("New Infections", fontsize=10)
+            plot.grid(visible="True", axis="y", which='both', color="darkgray", linewidth=0.75)
+            f.tight_layout()
+
+            if file.__contains__(str(0)):
+                f.savefig(outp + "ProfileDublin.png", dpi=300)
+            elif file.__contains__(str(1)):
+                f.savefig(outp + "Profile1.png", dpi=300)
+            elif file.__contains__(str(7)):
+                f.savefig(outp + "Profile7.png", dpi=300)
+                pass
+            pass
+        pass
+
+
+def same(one, two):
+    # print(str(len(one)) + "\t" + str(len(two)))
+    # if len(one) != len(two):
+    #     return False
+    for idx in range(max(len(one), len(two))):
+        val1 = round(one[idx], 1)
+        val2 = round(two[idx], 1)
+        if val1 != val2:
+            return False
+        pass
+    return True
+
+
 def main():
+    print("HELLO!")
+    make_profiles_in_dir("./Profiles/")
+
     file = "./raw_network.txt"
     adj = [[0 for _ in range(200)] for _ in range(200)]
     edges = 0
@@ -111,7 +187,7 @@ def main():
         pass
 
     lists = []
-    with open("dublin_graph.dat", "w") as f:
+    with open("dublin_graph_NEW.dat", "w") as f:
         f.write(str(200) + " " + str(edges) + " " + str(tot_weight) + "\n")
         for val in weight_cnt:
             f.write(str(val) + " ")
@@ -130,14 +206,16 @@ def main():
             pass
         pass
 
-    # avgProf = make_prof(lists, 200, 0)
+    with open("./Profiles/Profile0.dat") as f:
+        lines = f.readlines()
+        other = []
+        for line in lines:
+            line=line.rstrip()
+            other.append(float(line))
+            pass
+        pass
 
-    # with open("Profiles/Profile0.dat", "w") as f:
-    #     for av in avgProf:
-    #         f.write(str(av) + "\n")
-    #         pass
-    #     pass
-
+    print("DONE!")
     pass
 
 main()

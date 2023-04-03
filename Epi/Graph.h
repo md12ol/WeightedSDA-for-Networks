@@ -31,4 +31,4 @@ protected:
 };
 
 
-#endif //THADSNBIT_GRAPH_H
+#endif

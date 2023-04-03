@@ -26,8 +26,8 @@ int Graph::fill(const string fname) {
 
     ifstream infile(fname);
     string line;
-    getline(infile, line);
     infile >> numNodes;
+    getline(infile, line);
     getline(infile, line);
 
     adjM.reserve(numNodes);
@@ -204,7 +204,23 @@ vector<int> Graph::SIR(double alpha, int p0) {
 }
 
 int Graph::hammy_distance(Graph &other){
-    return 100;
+    int cost = 0;
+    for (int row = 0; row < other.numNodes; ++row) {
+        for (int col = row+1; col < other.numNodes; ++col) {
+            int curCount = adjM[row][col];
+            int dubCount = other.adjM[row][col];
+            if (curCount!=dubCount){
+                if (dubCount == 0){
+                    cost += 5;
+                } else if (curCount == 0){
+                    cost += 5;
+                } else{
+                    cost += abs(curCount-dubCount);
+                }
+            }
+        }
+    }
+    return cost;
 }
 
 //int main(){

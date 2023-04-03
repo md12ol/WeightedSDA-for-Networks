@@ -12,8 +12,8 @@ using namespace std;
 #if __has_include(<filesystem>)
 #define GHC_USE_STD_FS
 
+
 #include <filesystem>
-#include <mutex>
 #include <thread>
 
 namespace filesystem = std::filesystem;
@@ -51,7 +51,7 @@ int verts;
 int states;
 int MNM;
 //#define verts 128
-#define mevs 50000
+#define mevs 250000
 #define popsize 250
 //#define states 8
 //#define MNM 7
@@ -68,7 +68,7 @@ int MNM;
 bool *dead;
 double worst_fit;
 
-static vector<double> edgBnds = {1, 4};
+static vector<double> edgBnds = {1, 7};
 static vector<int> wghtBnds = {4, 16};
 static double zeroProb = 0.90;
 static bool diagFill = true;
@@ -136,11 +136,8 @@ int main(int argc, char *argv[]) {
         }
         PD = new double[PL + 1];
     } else if (fitFun == 2) {
-        pNum = 0;
-        PL = 30;
         verts = 200;
-        sprintf(outLoc, "%sNMBit%s on P%s w %dS, %dM/", outRoot, "DUB", "D", states, MNM);
-        PD = new double[PL + 1];
+        sprintf(outLoc, "%sNMBit%s w %dS, %dM/", outRoot, "DUB", states, MNM);
         dublin_graph.fill("./dublin_graph.dat");
     } else {
         cout << "ERROR! No outLoc for this fitFun!" << endl;
@@ -158,7 +155,7 @@ int main(int argc, char *argv[]) {
     readme.open(fn, ios::out);
     createReadMe(readme);
     readme.close();
-    sprintf(fn, "%spatient0%02d.dat", outLoc, run0+1);
+    sprintf(fn, "%spatient0%02d.dat", outLoc, run0 + 1);
     patient0out.open(fn, ios::out);
     patient0out << "Patient Zero Update Info" << endl;
 
@@ -204,19 +201,23 @@ int main(int argc, char *argv[]) {
         cout << "Started" << endl;
     }
 
-    for (int run = run0; run < run0+1; ++run) {
-        patient0 = (int) lrand48() % verts;
+    for (int run = run0; run < run0 + 1; ++run) {
+        if (fitFun != 2) {
+            patient0 = (int) lrand48() % verts;
+        }
         sprintf(fn, "%srun%02d.dat", outLoc, run + 1); // File name
         stat.open(fn, ios::out);
-        if (verbose) cmdLineRun(run, cout);
         initpop();
+        if (verbose) cmdLineRun(run, cout);
         stat << left << setw(4) << 0;
         report(stat); // report the statistics of the initial population
-        patient0out << "Run # " << run + 1 << endl;
-        patientZeroUpdate(0, patient0out, false);
+        if (fitFun != 2) {
+            patient0out << "Run # " << run + 1 << endl;
+            patientZeroUpdate(0, patient0out, false);
+        }
         for (int mev = 0; mev < mevs; mev++) { // do mating events
             matingevent(); // run a mating event
-            if ((mev + 1) < P0UPS * P0INT && (mev + 1) % P0INT == 0) {
+            if (fitFun != 2 && (mev + 1) < P0UPS * P0INT && (mev + 1) % P0INT == 0) {
                 patientZeroUpdate(mev, patient0out, false);
             }
             if ((mev + 1) % RE == 0) { // Time for a report?
@@ -331,9 +332,10 @@ void cmdLineRun(int run, ostream &aus) {
 void initalg(const char *pLoc) { // initialize the algorithm
     fstream inp;  // input file
     char buf[20]; // input buffer
+    int val;
 
     srand48(RNS); // read the random number seed
-    if (fitFun == 1 || fitFun == 2) {
+    if (fitFun == 1) {
         inp.open(pLoc, ios::in); // open input file
         for (int i = 0; i < PL; i++) {
             PD[i] = 0; // pre-fill missing values
@@ -341,7 +343,8 @@ void initalg(const char *pLoc) { // initialize the algorithm
         PD[0] = 1; // put in patient zero
         for (int i = 0; i < PL; i++) {                                     // loop over input values
             inp.getline(buf, 19);             // read in the number
-            PD[i + 1] = strtod(buf, nullptr); // translate the number
+            val = strtod(buf, nullptr);
+            PD[i + 1] = val * ((double) verts / 128); // translate the number
         }
         inp.close();
     }
@@ -536,48 +539,105 @@ double fitness(Bitsprayer &A, bool finalTest) {
 }
 
 void initpop() { // initialize population
+    int count = 0;
     for (int i = 0; i < popsize; i++) {
         dead[i] = false;
         do {
             bPop[i].randomize();
+            count++;
         } while (necroticFilter(bPop[i]));
         fit[i] = fitness(bPop[i], false);
         dx[i] = i;
+//        cout<<"DONE 1"<<endl;
     }
+    cout << "\n" << "Attempts: " << count << endl;
 }
 
 void matingevent() { // run a mating event
     int rp, sw;   // loop index, random position, swap variable
     int cp1, cp2; // crossover points
+    Bitsprayer child1, child2;
+    child1 = *new Bitsprayer(states, zeroProb);
+    child2 = *new Bitsprayer(states, zeroProb);
 
-    // perform tournament selection, highest fitness first
-    if (fitFun == 0) {
-        tselect(fit, dx, tsize, popsize);
-    } else if (fitFun == 1 || fitFun == 2) {
-        Tselect(fit, dx, tsize, popsize);
-    }
+    bool firstDead, secondDead;
+    int deaths;
+    do {
+        // perform tournament selection
+        if (fitFun == 0) {
+            tselect(fit, dx, tsize, popsize); // lowest first
+        } else if (fitFun == 1 || fitFun == 2) {
+            Tselect(fit, dx, tsize, popsize); // highest first
+        }
 
-    bPop[dx[0]].copy(bPop[dx[tsize - 2]]);
-    bPop[dx[1]].copy(bPop[dx[tsize - 1]]);
-    bPop[dx[0]].twoPtCrossover(bPop[dx[1]]);
-    rp = (int) lrand48() % MNM + 1;
-    bPop[dx[0]].mutate(rp);
-    rp = (int) lrand48() % MNM + 1;
-    bPop[dx[1]].mutate(rp);
-    // reset dead SDAs
+        child1.copy(bPop[dx[tsize - 2]]);
+        child2.copy(bPop[dx[tsize - 1]]);
+        child1.twoPtCrossover(child2);
+        rp = (int) lrand48() % MNM + 1;
+        child1.mutate(rp);
+        rp = (int) lrand48() % MNM + 1;
+        child2.mutate(rp);
+
+        firstDead = necroticFilter(child1);
+        secondDead = necroticFilter(child2);
+        deaths = 0;
+        if (firstDead || secondDead) {
+            for (int i = 0; i < popsize; ++i) {
+                if (dead[i]) {
+                    deaths++;
+                }
+            }
+        }
+        if (firstDead) {
+            deaths++;
+        }
+        if (secondDead) {
+            deaths++;
+        }
+    } while (deaths > 0.8 * popsize);
+
+    bPop[dx[0]].copy(child1);
+    bPop[dx[1]].copy(child2);
     dead[dx[0]] = false;
     dead[dx[1]] = false;
-    if (necroticFilter(bPop[dx[0]]) == 1) {
+    double fitVal = 0.0;
+    if (firstDead) {
         dead[dx[0]] = true;
         fit[dx[0]] = worst_fit;
     } else {
-        fit[dx[0]] = fitness(bPop[dx[0]], false);
+        fitVal = fitness(bPop[dx[0]], false);
+        if (fitFun == 2) {
+            if (fitVal > 1.1 * worst_fit) {
+                cout << fitVal << 1.1 * fitVal << endl;
+                worst_fit = 1.1 * fitVal;
+                for (int i = 0; i < popsize; i++) {
+                    if (dead[i]) {
+                        fit[i] = worst_fit;
+                    }
+                }
+            } else {
+                fit[dx[0]] = fitVal;
+            }
+        }
     }
-    if (necroticFilter(bPop[dx[1]]) == 1) {
+    if (secondDead) {
         dead[dx[1]] = true;
         fit[dx[1]] = worst_fit;
     } else {
-        fit[dx[1]] = fitness(bPop[dx[1]], false);
+        fitVal = fitness(bPop[dx[1]], false);
+        if (fitFun == 2) {
+            if (fitVal > 1.1 * worst_fit) {
+                cout << fitVal << 1.1 * fitVal << endl;
+                worst_fit = 1.1 * fitVal;
+                for (int i = 0; i < popsize; i++) {
+                    if (dead[i]) {
+                        fit[i] = worst_fit;
+                    }
+                }
+            } else {
+                fit[dx[1]] = fitVal;
+            }
+        }
     }
 }
 
@@ -600,6 +660,14 @@ void report(ostream &aus) { // make a statistical report
             good_fit[cnt++] = fit[i];
         }
     }
+
+    int cntcnt = 0;
+    for (int i = 0; i < popsize; ++i) {
+        if (necroticFilter(bPop[i])) {
+            cntcnt++;
+        }
+    }
+
     D.add(good_fit, popsize - deaths);
     if (fitFun == 0) {
         if (D.Rmin() != worst_fit) {
@@ -611,8 +679,8 @@ void report(ostream &aus) { // make a statistical report
             }
         }
     } else if (fitFun == 1 || fitFun == 2) {
-        if (D.Rmax() != worst_fit) {
-            worst_fit = D.Rmax();
+        if (D.Rmax() > worst_fit) {
+            worst_fit = D.Rmax() * 1.1;
             for (int i = 0; i < popsize; i++) {
                 if (dead[i]) { // update max
                     fit[i] = worst_fit;
@@ -629,7 +697,7 @@ void report(ostream &aus) { // make a statistical report
     } else if (fitFun == 1 || fitFun == 2) {
         aus << left << setw(8) << D.Rmin() << "\t";
     }
-    aus << "Dead: " << deaths << endl;
+    aus << "Dead: " << deaths << "\t" << worst_fit << endl;
     if (verbose) {
         cout << left << setw(10) << D.Rmu();
         cout << left << setw(12) << D.RCI95();
@@ -639,8 +707,17 @@ void report(ostream &aus) { // make a statistical report
         } else if (fitFun == 1 || fitFun == 2) {
             cout << left << setw(8) << D.Rmin() << "\t";
         }
-        cout << "Dead: " << deaths << endl;
+        cout << "Dead: " << deaths << "\t" << worst_fit << endl;
     }
+    int b = -1;
+    double best_fit = MAXFLOAT;
+    for (int i = 0; i < popsize; i++){
+        if (fit[i] < best_fit && !dead[i]){
+            best_fit = fit[i];
+            b = i;
+        }
+    }
+    cout<<"Best Saved: "<< best_fit << "; Calculated: "<< fitness(bPop[b], false);
 }
 
 void reportbest(ostream &aus, ostream &difc) { // report the best graph
@@ -656,21 +733,34 @@ void reportbest(ostream &aus, ostream &difc) { // report the best graph
 //        }
 //    }
 
-    b = 0;
-    if (fitFun == 0) {
+    b = -1;
+    double best_fit = MAXFLOAT;
+    if (fitFun == 0) { // Epidemic Length
         for (int i = 1; i < popsize; i++) {
             if (fit[i] > fit[b] && !dead[i]) {
                 b = i; // find best fitness
             }
         }
-    } else if (fitFun == 1 || fitFun == 2) {
-        for (int i = 1; i < popsize; i++) {
-            if (fit[i] < fit[b] && !dead[i]) {
+    } else if (fitFun == 1 || fitFun == 2) { // Profile Matching or Network Matching
+        for (int i = 0; i < popsize; i++) {
+            if (fit[i] < best_fit && !dead[i]) {
                 b = i; // find best fitness
+                best_fit = fit[i];
             }
         }
     }
 
+    double fitCheck = fitness(bPop[b], false);
+    if (fit[b] != fitCheck) {
+        cout << "ERROR!!!  Fitness not what is expected!" << endl;
+    }
+    if (dead[b]) {
+        cout << "ERROR!!!  Best is dead!" << endl;
+    }
+    if (necroticFilter(bPop[b])) {
+        cout << "ERROR!!!  Best fails necrotic filter!!" << endl;
+    }
+    cout << "Stored Fitness: " << fit[b] << "; Calculated Fitness: " << fitCheck;
     aus << fit[b] << " -fitness" << endl;
     // Write the SDA
     aus << "Self-Driving Automata" << endl;
