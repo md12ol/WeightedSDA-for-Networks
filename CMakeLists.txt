@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.5)
-project(SDWS)
+project(WeightedSDAforNetworks)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_BUILD_TYPE "Release")
