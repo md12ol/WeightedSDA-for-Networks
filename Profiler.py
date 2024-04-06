@@ -74,7 +74,7 @@ def make_prof(adj_lists: List[List[int]], nodes: int, p0):
         pass
 
     for idx in range(most):
-        avg_prof[idx] = avg_prof[idx]/500
+        avg_prof[idx] = avg_prof[idx] / 500
         pass
 
     return avg_prof
@@ -104,11 +104,11 @@ def make_profiles_in_dir(dir: str):
     files = os.listdir(dir)
     for fidx, file in enumerate(files):
         if file.__contains__(".dat"):
-            plt.rc('xtick', labelsize=6)
-            plt.rc('ytick', labelsize=6)
+            plt.rc('xtick', labelsize=12)
+            plt.rc('ytick', labelsize=12)
 
             f = plt.figure()
-            f.set_figheight(5)
+            f.set_figheight(4.5)
             f.set_figwidth(8)
             plot = f.add_subplot(111)
 
@@ -130,11 +130,11 @@ def make_profiles_in_dir(dir: str):
             elif file.__contains__(str(1)):
                 f.suptitle("Unimodal Epidemic Profile", fontsize=12)
             elif file.__contains__(str(7)):
-                f.suptitle("Bimodal Epidemic Profile", fontsize = 12)
+                f.suptitle("Bimodal Epidemic Profile", fontsize=12)
                 pass
 
-            plot.set_xlabel("Time Step", fontsize=10)
-            plot.set_ylabel("New Infections", fontsize=10)
+            plot.set_xlabel("Time Step", fontsize=12)
+            plot.set_ylabel("New Infections", fontsize=12)
             plot.grid(visible="True", axis="y", which='both', color="darkgray", linewidth=0.75)
             f.tight_layout()
 
@@ -179,43 +179,44 @@ def main():
                 li = line.split('\t')
                 edges += 1
                 tot_weight += int(li[2])
-                weight_cnt[int(li[2])-1] += 1
+                weight_cnt[int(li[2]) - 1] += 1
                 adj[int(li[0])][int(li[1])] = int(li[2])
                 adj[int(li[1])][int(li[0])] = int(li[2])
                 pass
             pass
         pass
 
-    lists = []
-    with open("dublin_graph_NEW.dat", "w") as f:
-        f.write(str(200) + " " + str(edges) + " " + str(tot_weight) + "\n")
-        for val in weight_cnt:
-            f.write(str(val) + " ")
-            pass
-        f.write("\n")
-        for rowIdx in range(200):
-            li = []
-            for colIdx in range(200):
-                for _ in range(int(adj[rowIdx][colIdx])):
-                    li.append(int(colIdx))
-                    f.write(str(colIdx) + " ")
-                    pass
-                pass
-            lists.append(li)
-            f.write("\n")
-            pass
-        pass
-
-    with open("./Profiles/Profile0.dat") as f:
-        lines = f.readlines()
-        other = []
-        for line in lines:
-            line=line.rstrip()
-            other.append(float(line))
-            pass
-        pass
+    # lists = []
+    # with open("dublin_graph_NEW.dat", "w") as f:
+    #     f.write(str(200) + " " + str(edges) + " " + str(tot_weight) + "\n")
+    #     for val in weight_cnt:
+    #         f.write(str(val) + " ")
+    #         pass
+    #     f.write("\n")
+    #     for rowIdx in range(200):
+    #         li = []
+    #         for colIdx in range(200):
+    #             for _ in range(int(adj[rowIdx][colIdx])):
+    #                 li.append(int(colIdx))
+    #                 f.write(str(colIdx) + " ")
+    #                 pass
+    #             pass
+    #         lists.append(li)
+    #         f.write("\n")
+    #         pass
+    #     pass
+    #
+    # with open("./Profiles/Profile0.dat") as f:
+    #     lines = f.readlines()
+    #     other = []
+    #     for line in lines:
+    #         line = line.rstrip()
+    #         other.append(float(line))
+    #         pass
+    #     pass
 
     print("DONE!")
     pass
+
 
 main()

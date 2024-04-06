@@ -116,7 +116,8 @@ def get_data(dir_path: str):
     if "NM" in dir_path:
         data = [[i + 1, fits[i], SDAs[i], networks[i], edges[i], weights[i], hists[i]] for i in range(samps)]
     else:
-        data = [[i + 1, fits[i], SDAs[i], networks[i], edges[i], weights[i], hists[i], p0_list[i]] for i in range(samps)]
+        data = [[i + 1, fits[i], SDAs[i], networks[i], edges[i], weights[i], hists[i], p0_list[i]] for i in
+                range(samps)]
         pass
     data.sort(key=itemgetter(1))  # Ascending
     if "ED" in dir_path:
@@ -146,8 +147,8 @@ def get_base_data(file_path: str):
         mins.append(min(dat))
         pass
 
-    to_return = [[i+1, mins[i], data[i]] for i in range(len(data))]
-    to_return.sort(key=itemgetter(1)) # Ascending
+    to_return = [[i + 1, mins[i], data[i]] for i in range(len(data))]
+    to_return.sort(key=itemgetter(1))  # Ascending
     return data, to_return
 
 
@@ -262,7 +263,7 @@ def box_plot(bp, num_splits: int, split_info: []):
         pass
 
     for median in bp['medians']:
-        median.set(color='#FF7F0E', linewidth=1)
+        median.set(color='k', linewidth=1)
         pass
 
     for flier in bp['fliers']:
@@ -339,9 +340,9 @@ def make_ring(verts: int):
     el = []
     adjM = [[0 for _ in range(verts)] for _ in range(verts)]
     for v in range(verts):
-        el.append([v, (v+1) % verts, 1])
-        el.append([v, (v+2) % verts, 1])
-        adjM[v][(v+1) % verts] = 1
+        el.append([v, (v + 1) % verts, 1])
+        el.append([v, (v + 2) % verts, 1])
+        adjM[v][(v + 1) % verts] = 1
         adjM[v][(v + 2) % verts] = 1
         pass
 
@@ -349,8 +350,8 @@ def make_ring(verts: int):
     ys = []
 
     for v in range(verts):
-        xs.append(400* float(cos(2*pi*(v/128))) + 500)
-        ys.append(400* float(sin(2*pi*(v/128))) + 500)
+        xs.append(400 * float(cos(2 * pi * (v / 128))) + 500)
+        ys.append(400 * float(sin(2 * pi * (v / 128))) + 500)
         pass
 
     g = Graph(engine='neato')
@@ -382,9 +383,9 @@ def make_graph(el: [], low_deg: [], high_deg: [], out_file: str, verts: int, p0:
     e_cout = 0
 
     g.graph_attr.update(dpi='1000', size="6,6", outputorder='edgesfirst', overlap='false', splines='true')
-    g.node_attr.update(color='black', shape='point', width='0.02', height='0.02')
+    g.node_attr.update(color='black', shape='point', width='0.04', height='0.04')
     # g.node_attr.update(color='black', shape='circle', fixedsize='true', width='0.25', fontsize='8')
-    g.edge_attr.update(color='black', penwidth='0.25')
+    g.edge_attr.update(color='black', penwidth='1.5')
 
     for i in range(verts):
         g.node(str(i))
@@ -738,16 +739,16 @@ def main():
         pass
     # make_graph(edge_list(dub_lines, 200), [], [], "Dublin Network", 200, 0)
     # make_graph(make_ring(128), [], [], "128 Ring Network", 128, 0)
-    make_ring(128)
+    # make_ring(128)
 
-    exp_lbls = ["Base1", "Base2"]
+    exp_lbls = ["EE1", "EE2"]
     exp_dat = []
     exp_descriptions = ["Edit PS1", "Edit PS2"]
     exp_idx = 1
     for s in states:
         for m in muts:
             exp_dat.append([str(s) + "S", str(m) + "M"])
-            exp_lbls.append(str(exp_idx) + "(" + str(s) + ", " + str(m) + ")")
+            exp_lbls.append("SDA" + str(exp_idx))
             exp_descriptions.append(str(s) + "States, " + str(m) + "Muts")
             exp_idx += 1
             pass
@@ -800,6 +801,11 @@ def main():
                 if make_any and not os.path.exists(outp + mode_path):
                     os.makedirs(outp + mode_path)
                     pass
+                print(itms)
+                print(size)
+                print(min(base_stats[midx][sidx][0]))
+                print(min(base_stats[midx][sidx][1]))
+                print("\n")
                 mode_stats[midx][sidx].append(base_stats[midx][sidx][0])
                 mode_stats[midx][sidx].append(base_stats[midx][sidx][1])
             elif midx == 3 and sidx == 0:
@@ -807,6 +813,11 @@ def main():
                 if make_any and not os.path.exists(outp + mode_path):
                     os.makedirs(outp + mode_path)
                     pass
+                print(itms)
+                print(size)
+                print(min(base_stats[midx][sidx][0]))
+                print(min(base_stats[midx][sidx][1]))
+                print("\n")
                 mode_stats[midx][sidx].append(base_stats[midx][sidx][0])
                 mode_stats[midx][sidx].append(base_stats[midx][sidx][1])
                 pass
@@ -831,50 +842,54 @@ def main():
             pass
         pass
 
-    titles = ["Epidemic Length", "Epidemic Profile Matching P1", "Epidemic Profile Matching P7",
-              "Epidemic Profile Matching Dublin"]
+    titles = ["Epidemic Duration", "Unimodal Profile Matching", "Bimodal Profile Matching",
+              "Dublin Profile Matching"]
     names = ["EL_boxplot", "PM1_boxplot", "PM7_boxplot", "PMDUB_boxplot"]
     # xsp = [[i for i in range(len(all_data[0]))], [i for i in range(len(all_data[1]))]]
     # xpos = [xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1]]
     ylb = ["Fitness", "Fitness", "Fitness", "Fitness", "Fitness"]
-    xlb = ["Experiment (Num. States, Max. Mutations)",
-           "Experiment (Num. States, Max. Mutations)",
-           "Experiment (Num. States, Max. Mutations)",
-           "Experiment (Num. States, Max. Mutations)",
-           "Experiment (Num. States, Max. Mutations)"]
+    xlb = ["Experiment",
+           "Experiment",
+           "Experiment",
+           "Experiment",
+           "Experiment"]
 
     # lxpos = []
     # for i in range(2, len(all_data[0]) - 3, 3):
     #     lxpos.append(i + 0.5)
     #     pass
-    base_colors = ["#808080", "#696969"]
-    colors = ['#0000FF', '#00FF00', '#FFFF00']
+    colors = ['#ff0000', '#ff8000', '#FFFF00', '#80FF00', '#00FF00', '#00FF80', '#00FFFF', '#0080FF', '#0000FF',
+              '#8000FF', '#FF00FF']
     for idx in range(len(titles)):
         for sidx, size in enumerate(sizes):
             if idx < 3 or sidx == 0:
-                plt.rc('xtick', labelsize=6)
-                plt.rc('ytick', labelsize=6)
+                if idx >= 3:
+                    size = 200
+                    pass
+                plt.style.use("seaborn-v0_8")
+                plt.rc('xtick', labelsize=10)
+                plt.rc('ytick', labelsize=10)
 
                 f = plt.figure()
-                f.set_figheight(5)
+                f.set_figheight(5.5)
                 f.set_figwidth(8)
                 plot = f.add_subplot(111)
 
                 bp = plot.boxplot(mode_stats[idx][sidx], patch_artist=True)
-                box_plot(bp, 2, [[[0, 1], base_colors], [[i for i in range(2, 11)], colors]])
+                box_plot(bp, 1, [[[i for i in range(11)], colors]])
 
                 # plot.set_xticks(xpos[idx])
-                plot.set_xticklabels(exp_lbls, rotation=90)
+                plot.set_xticklabels(exp_lbls, rotation=0)
 
                 if not titles[idx].__contains__("Dublin"):
-                    f.suptitle(titles[idx] + " w " + str(size) + " Nodes", fontsize=12)
+                    plot.set_title(titles[idx] + " with " + str(size) + " Nodes", fontsize=14)
                 else:
-                    f.suptitle(titles[idx], fontsize=12)
+                    plot.set_title(titles[idx] + " with " + str(size) + " Nodes", fontsize=14)
                     pass
-                plot.set_xlabel(xlb[idx], fontsize=10)
-                plot.set_ylabel(ylb[idx], fontsize=10)
+                plot.set_xlabel(xlb[idx], fontsize=12)
+                plot.set_ylabel(ylb[idx], fontsize=12)
                 # for x in lxpos:
-                #     plot.axvline(x=x, color='black', linestyle='--', linewidth=0.75)
+                plot.axvline(x=2.5, color='black', linestyle='--', linewidth=1)
                 #     pass
                 plot.grid(visible="True", axis="y", which='major', color="darkgray", linewidth=0.75)
                 f.tight_layout()
@@ -934,7 +949,7 @@ def main():
     xlb = ["Experiment (Num. States, Max. Mutations)",
            "Experiment (Num. States, Max. Mutations)",
            "Experiment (Num. States, Max. Mutations)",
-           "Experiment (Num. States, Max. Mutations)",]
+           "Experiment (Num. States, Max. Mutations)", ]
     out_path = outp + "Network Stats Boxplots"
     if not os.path.exists(out_path):
         os.makedirs(out_path)
